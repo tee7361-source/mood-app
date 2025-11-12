@@ -38,6 +38,44 @@
             margin-bottom: 30px;
         }
         
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .form-header h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+        
+        .btn-cancel {
+            padding: 8px 16px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+        
+        .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+        
+        .edit-mode {
+            border: 3px solid #ffd93d;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 10px 30px rgba(255, 217, 61, 0.3); }
+            50% { box-shadow: 0 10px 40px rgba(255, 217, 61, 0.6); }
+        }
+        
         .form-group {
             margin-bottom: 20px;
         }
@@ -121,6 +159,10 @@
             transform: translateY(-2px);
         }
         
+        .btn-update {
+            background: linear-gradient(135deg, #ffd93d 0%, #ff9d00 100%);
+        }
+        
         .mood-list {
             display: grid;
             gap: 15px;
@@ -132,6 +174,11 @@
             border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             border-left: 5px solid;
+            transition: transform 0.2s;
+        }
+        
+        .mood-item:hover {
+            transform: translateX(5px);
         }
         
         .mood-item.red { border-left-color: #ff6b6b; }
@@ -174,21 +221,49 @@
         .mood-detail {
             color: #555;
             line-height: 1.6;
+            margin-bottom: 10px;
         }
         
-        .btn-delete {
-            margin-top: 10px;
+        .mood-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-edit, .btn-delete {
             padding: 8px 15px;
-            background-color: #ff6b6b;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn-edit {
+            background-color: #4CAF50;
+        }
+        
+        .btn-edit:hover {
+            background-color: #45a049;
+        }
+        
+        .btn-delete {
+            background-color: #ff6b6b;
         }
         
         .btn-delete:hover {
             background-color: #ff5252;
+        }
+        
+        .updated-badge {
+            display: inline-block;
+            background-color: #ffd93d;
+            color: #333;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
         }
         
         .empty-state {
@@ -204,36 +279,47 @@
     <div class="container">
         <h1>📔 บันทึกความรู้สึกของฉัน</h1>
         
-        <!-- ฟอร์มบันทึก -->
-        <div class="form-card">
-            <form action="/add" method="POST">
+        <!-- ฟอร์มบันทึก/แก้ไข -->
+        <div class="form-card {% if edit_mood %}edit-mode{% endif %}">
+            <div class="form-header">
+                <h2>{% if edit_mood %}✏️ แก้ไขบันทึก{% else %}➕ เพิ่มบันทึกใหม่{% endif %}</h2>
+                {% if edit_mood %}
+                <a href="/" class="btn-cancel">❌ ยกเลิก</a>
+                {% endif %}
+            </div>
+            
+            <form action="{% if edit_mood %}/update/{{ edit_mood.id }}{% else %}/add{% endif %}" method="POST">
                 <div class="form-group">
                     <label>📅 วันที่:</label>
-                    <input type="date" name="date" required>
+                    <input type="date" name="date" value="{% if edit_mood %}{{ edit_mood.date }}{% endif %}" required>
                 </div>
                 
                 <div class="form-group">
                     <label>🕐 เวลา:</label>
-                    <input type="time" name="time" required>
+                    <input type="time" name="time" value="{% if edit_mood %}{{ edit_mood.time }}{% endif %}" required>
                 </div>
                 
                 <div class="form-group">
                     <label>🎨 สีที่แทนความรู้สึก:</label>
                     <div class="color-options">
                         <div class="color-option">
-                            <input type="radio" name="color" value="red" id="color-red" required>
+                            <input type="radio" name="color" value="red" id="color-red" 
+                                   {% if edit_mood and edit_mood.color == 'red' %}checked{% elif not edit_mood %}required{% endif %}>
                             <label for="color-red" class="color-label color-red">แดง</label>
                         </div>
                         <div class="color-option">
-                            <input type="radio" name="color" value="yellow" id="color-yellow">
+                            <input type="radio" name="color" value="yellow" id="color-yellow"
+                                   {% if edit_mood and edit_mood.color == 'yellow' %}checked{% endif %}>
                             <label for="color-yellow" class="color-label color-yellow">เหลือง</label>
                         </div>
                         <div class="color-option">
-                            <input type="radio" name="color" value="blue" id="color-blue">
+                            <input type="radio" name="color" value="blue" id="color-blue"
+                                   {% if edit_mood and edit_mood.color == 'blue' %}checked{% endif %}>
                             <label for="color-blue" class="color-label color-blue">น้ำเงิน</label>
                         </div>
                         <div class="color-option">
-                            <input type="radio" name="color" value="green" id="color-green">
+                            <input type="radio" name="color" value="green" id="color-green"
+                                   {% if edit_mood and edit_mood.color == 'green' %}checked{% endif %}>
                             <label for="color-green" class="color-label color-green">เขียว</label>
                         </div>
                     </div>
@@ -241,20 +327,26 @@
                 
                 <div class="form-group">
                     <label>💥 สิ่งกระตุ้น:</label>
-                    <input type="text" name="trigger" placeholder="เช่น การทำงาน, ครอบครัว, เพื่อน" required>
+                    <input type="text" name="trigger" 
+                           value="{% if edit_mood %}{{ edit_mood.trigger }}{% endif %}"
+                           placeholder="เช่น การทำงาน, ครอบครัว, เพื่อน" required>
                 </div>
                 
                 <div class="form-group">
                     <label>😊 ระบุอารมณ์:</label>
-                    <input type="text" name="emotion" placeholder="เช่น มีความสุข, เครียด, โกรธ, ผ่อนคลาย" required>
+                    <input type="text" name="emotion" 
+                           value="{% if edit_mood %}{{ edit_mood.emotion }}{% endif %}"
+                           placeholder="เช่น มีความสุข, เครียด, โกรธ, ผ่อนคลาย" required>
                 </div>
                 
                 <div class="form-group">
                     <label>📝 รายละเอียด:</label>
-                    <textarea name="detail" placeholder="เขียนรายละเอียดเพิ่มเติมเกี่ยวกับความรู้สึกของคุณ..." required></textarea>
+                    <textarea name="detail" placeholder="เขียนรายละเอียดเพิ่มเติมเกี่ยวกับความรู้สึกของคุณ..." required>{% if edit_mood %}{{ edit_mood.detail }}{% endif %}</textarea>
                 </div>
                 
-                <button type="submit" class="btn-submit">💾 บันทึก</button>
+                <button type="submit" class="btn-submit {% if edit_mood %}btn-update{% endif %}">
+                    {% if edit_mood %}💾 บันทึกการแก้ไข{% else %}💾 บันทึก{% endif %}
+                </button>
             </form>
         </div>
         
@@ -266,6 +358,9 @@
                     <div class="mood-header">
                         <div class="mood-datetime">
                             📅 {{ mood.date }} เวลา {{ mood.time }}
+                            {% if mood.updated_at %}
+                            <span class="updated-badge">แก้ไขแล้ว</span>
+                            {% endif %}
                         </div>
                         <div class="mood-color-badge" style="background-color: 
                             {% if mood.color == 'red' %}#ff6b6b
@@ -281,9 +376,14 @@
                     <div class="mood-trigger">💥 สิ่งกระตุ้น: {{ mood.trigger }}</div>
                     <div class="mood-detail">{{ mood.detail }}</div>
                     
-                    <a href="/delete/{{ mood.id }}" onclick="return confirm('คุณต้องการลบบันทึกนี้?')">
-                        <button class="btn-delete">🗑️ ลบ</button>
-                    </a>
+                    <div class="mood-footer">
+                        <a href="/edit/{{ mood.id }}">
+                            <button class="btn-edit">✏️ แก้ไข</button>
+                        </a>
+                        <a href="/delete/{{ mood.id }}" onclick="return confirm('คุณต้องการลบบันทึกนี้?')">
+                            <button class="btn-delete">🗑️ ลบ</button>
+                        </a>
+                    </div>
                 </div>
                 {% endfor %}
             {% else %}

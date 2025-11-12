@@ -52,6 +52,46 @@ def add_mood():
     
     return redirect(url_for('index'))
 
+# แสดงฟอร์มแก้ไข
+@app.route('/edit/<mood_id>')
+def edit_mood(mood_id):
+    moods = load_moods()
+    # หารายการที่ต้องการแก้ไข
+    mood_to_edit = None
+    for mood in moods:
+        if mood['id'] == mood_id:
+            mood_to_edit = mood
+            break
+    
+    if mood_to_edit is None:
+        return redirect(url_for('index'))
+    
+    return render_template('index.html', moods=moods, edit_mood=mood_to_edit)
+
+# อัพเดทรายการที่แก้ไข
+@app.route('/update/<mood_id>', methods=['POST'])
+def update_mood(mood_id):
+    moods = load_moods()
+    
+    # หาและอัพเดทรายการ
+    for i, mood in enumerate(moods):
+        if mood['id'] == mood_id:
+            moods[i] = {
+                'id': mood_id,
+                'date': request.form['date'],
+                'time': request.form['time'],
+                'color': request.form['color'],
+                'trigger': request.form['trigger'],
+                'emotion': request.form['emotion'],
+                'detail': request.form['detail'],
+                'created_at': mood['created_at'],  # เก็บวันที่สร้างเดิม
+                'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # เพิ่มวันที่แก้ไข
+            }
+            break
+    
+    save_moods(moods)
+    return redirect(url_for('index'))
+
 # ลบบันทึก
 @app.route('/delete/<mood_id>')
 def delete_mood(mood_id):
@@ -61,6 +101,5 @@ def delete_mood(mood_id):
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    # host='0.0.0.0' ทำให้เข้าถึงได้จากอุปกรณ์อื่นในเครือข่ายเดียวกัน
+    app.run(debug=True, host='0.0.0.0', port=5000)
