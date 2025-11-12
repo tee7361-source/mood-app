@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📔 บันทึกความรู้สึก</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        .color-option {
+            position: relative;
+        }
+        
+        .color-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .color-label {
+            display: block;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .color-option input[type="radio"]:checked + .color-label {
+            border-color: #333;
+            transform: scale(1.05);
+        }
+        
+        .color-red { background-color: #ff6b6b; color: white; }
+        .color-yellow { background-color: #ffd93d; color: #333; }
+        .color-blue { background-color: #6bcfff; color: white; }
+        .color-green { background-color: #51cf66; color: white; }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+        }
+        
+        .mood-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .mood-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+        }
+        
+        .mood-item.red { border-left-color: #ff6b6b; }
+        .mood-item.yellow { border-left-color: #ffd93d; }
+        .mood-item.blue { border-left-color: #6bcfff; }
+        .mood-item.green { border-left-color: #51cf66; }
+        
+        .mood-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .mood-datetime {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .mood-color-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .mood-emotion {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .mood-trigger {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .mood-detail {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .btn-delete {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-delete:hover {
+            background-color: #ff5252;
+        }
+        
+        .empty-state {
+            background: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📔 บันทึกความรู้สึกของฉัน</h1>
+        
+        <!-- ฟอร์มบันทึก -->
+        <div class="form-card">
+            <form action="/add" method="POST">
+                <div class="form-group">
+                    <label>📅 วันที่:</label>
+                    <input type="date" name="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>🕐 เวลา:</label>
+                    <input type="time" name="time" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>🎨 สีที่แทนความรู้สึก:</label>
+                    <div class="color-options">
+                        <div class="color-option">
+                            <input type="radio" name="color" value="red" id="color-red" required>
+                            <label for="color-red" class="color-label color-red">แดง</label>
+                        </div>
+                        <div class="color-option">
+                            <input type="radio" name="color" value="yellow" id="color-yellow">
+                            <label for="color-yellow" class="color-label color-yellow">เหลือง</label>
+                        </div>
+                        <div class="color-option">
+                            <input type="radio" name="color" value="blue" id="color-blue">
+                            <label for="color-blue" class="color-label color-blue">น้ำเงิน</label>
+                        </div>
+                        <div class="color-option">
+                            <input type="radio" name="color" value="green" id="color-green">
+                            <label for="color-green" class="color-label color-green">เขียว</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>💥 สิ่งกระตุ้น:</label>
+                    <input type="text" name="trigger" placeholder="เช่น การทำงาน, ครอบครัว, เพื่อน" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>😊 ระบุอารมณ์:</label>
+                    <input type="text" name="emotion" placeholder="เช่น มีความสุข, เครียด, โกรธ, ผ่อนคลาย" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>📝 รายละเอียด:</label>
+                    <textarea name="detail" placeholder="เขียนรายละเอียดเพิ่มเติมเกี่ยวกับความรู้สึกของคุณ..." required></textarea>
+                </div>
+                
+                <button type="submit" class="btn-submit">💾 บันทึก</button>
+            </form>
+        </div>
+        
+        <!-- รายการบันทึก -->
+        <div class="mood-list">
+            {% if moods %}
+                {% for mood in moods %}
+                <div class="mood-item {{ mood.color }}">
+                    <div class="mood-header">
+                        <div class="mood-datetime">
+                            📅 {{ mood.date }} เวลา {{ mood.time }}
+                        </div>
+                        <div class="mood-color-badge" style="background-color: 
+                            {% if mood.color == 'red' %}#ff6b6b
+                            {% elif mood.color == 'yellow' %}#ffd93d
+                            {% elif mood.color == 'blue' %}#6bcfff
+                            {% elif mood.color == 'green' %}#51cf66
+                            {% endif %}">
+                            {{ mood.color|upper }}
+                        </div>
+                    </div>
+                    
+                    <div class="mood-emotion">😊 {{ mood.emotion }}</div>
+                    <div class="mood-trigger">💥 สิ่งกระตุ้น: {{ mood.trigger }}</div>
+                    <div class="mood-detail">{{ mood.detail }}</div>
+                    
+                    <a href="/delete/{{ mood.id }}" onclick="return confirm('คุณต้องการลบบันทึกนี้?')">
+                        <button class="btn-delete">🗑️ ลบ</button>
+                    </a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <h2>ยังไม่มีบันทึก</h2>
+                    <p>เริ่มบันทึกความรู้สึกของคุณได้เลย!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
