@@ -1,4 +1,4 @@
+.env
 moods.json
 __pycache__/
 *.pyc
-.env

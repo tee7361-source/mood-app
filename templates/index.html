@@ -377,10 +377,10 @@
                     <div class="mood-detail">{{ mood.detail }}</div>
                     
                     <div class="mood-footer">
-                        <a href="/edit/{{ mood.id }}">
+                        <a href="/edit/{{ mood._id }}">
                             <button class="btn-edit">✏️ แก้ไข</button>
                         </a>
-                        <a href="/delete/{{ mood.id }}" onclick="return confirm('คุณต้องการลบบันทึกนี้?')">
+                        <a href="/delete/{{ mood._id }}" onclick="return confirm('คุณต้องการลบบันทึกนี้?')">
                             <button class="btn-delete">🗑️ ลบ</button>
                         </a>
                     </div>
