@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📔 บันทึกความรู้สึก</title>
+    <title>📔 บันทึกความรู้สึก - Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -16,6 +16,82 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+        }
+        
+        /* Navigation Bar */
+        .navbar {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-name {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .btn-logout {
+            padding: 8px 20px;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-logout:hover {
+            background-color: #ff5252;
+        }
+        
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         
         .container {
@@ -276,7 +352,27 @@
     </style>
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <div class="navbar-brand">📔 บันทึกความรู้สึก</div>
+        <div class="navbar-user">
+            <span class="user-name">👤 {{ current_user.username }}</span>
+            <a href="{{ url_for('logout') }}" class="btn-logout">🚪 ออกจากระบบ</a>
+        </div>
+    </div>
+    
     <div class="container">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         <h1>📔 บันทึกความรู้สึกของฉัน</h1>
         
         <!-- ฟอร์มบันทึก/แก้ไข -->
@@ -288,7 +384,7 @@
                 {% endif %}
             </div>
             
-            <form action="{% if edit_mood %}/update/{{ edit_mood.id }}{% else %}/add{% endif %}" method="POST">
+            <form action="{% if edit_mood %}/update/{{ edit_mood._id }}{% else %}/add{% endif %}" method="POST">
                 <div class="form-group">
                     <label>📅 วันที่:</label>
                     <input type="date" name="date" value="{% if edit_mood %}{{ edit_mood.date }}{% endif %}" required>
