@@ -11,8 +11,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer
 from threading import Thread
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
 # โหลดค่าจาก .env
 load_dotenv()
@@ -23,7 +21,6 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-product
 # Email Configuration
 MAIL_USERNAME = os.getenv('MAIL_USERNAME')
 MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
-SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')  # เพิ่มบรรทัดนี้
 
 # สร้าง Serializer สำหรับ Token
 serializer = URLSafeTimedSerializer(app.secret_key)
@@ -47,50 +44,31 @@ users_collection = db['users']  # Collection ใหม่สำหรับเ�
 users_collection.create_index('username', unique=True)
 
 # ฟังก์ชันส่งอีเมลแบบ Async (Background Thread)
-def send_async_email(app, msg_data):
+def send_async_email(app, msg):
     """ส่งอีเมลใน Background Thread"""
     with app.app_context():
         try:
-            # ลองใช้ SendGrid ก่อน (ถ้ามี API Key)
-            if SENDGRID_API_KEY:
-                message = Mail(
-                    from_email=MAIL_USERNAME,
-                    to_emails=msg_data['to'],
-                    subject=msg_data['subject'],
-                    html_content=msg_data['html']
-                )
-                sg = SendGridAPIClient(SENDGRID_API_KEY)
-                response = sg.send(message)
-                print(f"✅ Email sent via SendGrid (status: {response.status_code})")
-            else:
-                # ถ้าไม่มี SendGrid ใช้ Gmail SMTP
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = msg_data['subject']
-                msg['From'] = MAIL_USERNAME
-                msg['To'] = msg_data['to']
-                
-                part = MIMEText(msg_data['html'], 'html')
-                msg.attach(part)
-                
-                with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
-                    server.starttls()
-                    server.login(MAIL_USERNAME, MAIL_PASSWORD)
-                    server.send_message(msg)
-                print("✅ Email sent via Gmail SMTP")
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
+                server.starttls()
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                server.send_message(msg)
+                print("✅ Email sent successfully")
         except Exception as e:
             print(f"❌ Error sending email: {e}")
 
 # ฟังก์ชันส่งอีเมล
 def send_email(subject, recipient, html_content):
     """สร้างและส่งอีเมลแบบ Async"""
-    msg_data = {
-        'subject': subject,
-        'to': recipient,
-        'html': html_content
-    }
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = MAIL_USERNAME
+    msg['To'] = recipient
+    
+    part = MIMEText(html_content, 'html')
+    msg.attach(part)
     
     # ส่งอีเมลใน Background Thread
-    Thread(target=send_async_email, args=(app, msg_data)).start()
+    Thread(target=send_async_email, args=(app, msg)).start()
     return True
 
 # ฟังก์ชันส่งอีเมล
