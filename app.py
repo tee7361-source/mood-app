@@ -12,6 +12,15 @@ from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer
 from threading import Thread
 
+# Import SendGrid แบบ Optional (ไม่ Error ถ้าไม่มี)
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+    SENDGRID_AVAILABLE = True
+except ImportError:
+    SENDGRID_AVAILABLE = False
+    print("⚠️ SendGrid not installed, using Gmail SMTP")
+
 # โหลดค่าจาก .env
 load_dotenv()
 
@@ -21,6 +30,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-product
 # Email Configuration
 MAIL_USERNAME = os.getenv('MAIL_USERNAME')
 MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')  # เพิ่มบรรทัดนี้
 
 # สร้าง Serializer สำหรับ Token
 serializer = URLSafeTimedSerializer(app.secret_key)
@@ -44,31 +54,76 @@ users_collection = db['users']  # Collection ใหม่สำหรับเ�
 users_collection.create_index('username', unique=True)
 
 # ฟังก์ชันส่งอีเมลแบบ Async (Background Thread)
-def send_async_email(app, msg):
+def send_async_email(app, msg_data):
     """ส่งอีเมลใน Background Thread"""
-    with app.app_context():
-        try:
-            with smtplib.SMTP('smtp.gmail.com', 587, timeout=30) as server:
-                server.starttls()
-                server.login(MAIL_USERNAME, MAIL_PASSWORD)
-                server.send_message(msg)
-                print("✅ Email sent successfully")
-        except Exception as e:
-            print(f"❌ Error sending email: {e}")
+    try:
+        # ไม่ต้องใช้ app_context เพราะไม่ได้เรียกใช้ Flask function
+        
+        # ตรวจสอบว่ามี Email config หรือไม่
+        if not MAIL_USERNAME or not MAIL_PASSWORD:
+            print("❌ Email credentials not configured")
+            return
+        
+        # ลองใช้ SendGrid ก่อน (ถ้ามี API Key และติดตั้งแล้ว)
+        if SENDGRID_AVAILABLE and SENDGRID_API_KEY:
+            try:
+                message = Mail(
+                    from_email=MAIL_USERNAME,
+                    to_emails=msg_data['to'],
+                    subject=msg_data['subject'],
+                    html_content=msg_data['html']
+                )
+                sg = SendGridAPIClient(SENDGRID_API_KEY)
+                response = sg.send(message)
+                print(f"✅ Email sent via SendGrid (status: {response.status_code})")
+                return
+            except Exception as e:
+                print(f"⚠️ SendGrid failed, falling back to Gmail SMTP: {e}")
+        
+        # ใช้ Gmail SMTP
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = msg_data['subject']
+        msg['From'] = MAIL_USERNAME
+        msg['To'] = msg_data['to']
+        
+        part = MIMEText(msg_data['html'], 'html')
+        msg.attach(part)
+        
+        # เพิ่ม timeout และ retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
+                    server.starttls()
+                    server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                    server.send_message(msg)
+                print(f"✅ Email sent via Gmail SMTP (attempt {attempt + 1})")
+                return
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"⚠️ Attempt {attempt + 1} failed, retrying: {e}")
+                    import time
+                    time.sleep(2)  # รอ 2 วินาที
+                else:
+                    print(f"❌ All attempts failed: {e}")
+                    
+    except Exception as e:
+        print(f"❌ Error in send_async_email: {e}")
+        # ไม่ raise exception เพื่อไม่ให้ Thread crash
 
 # ฟังก์ชันส่งอีเมล
 def send_email(subject, recipient, html_content):
     """สร้างและส่งอีเมลแบบ Async"""
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = MAIL_USERNAME
-    msg['To'] = recipient
+    msg_data = {
+        'subject': subject,
+        'to': recipient,
+        'html': html_content
+    }
     
-    part = MIMEText(html_content, 'html')
-    msg.attach(part)
-    
-    # ส่งอีเมลใน Background Thread
-    Thread(target=send_async_email, args=(app, msg)).start()
+    # ส่งอีเมลใน Background Thread (daemon=True เพื่อไม่บล็อก main process)
+    thread = Thread(target=send_async_email, args=(app, msg_data))
+    thread.daemon = True  # Thread จะหยุดเมื่อ main process หยุด
+    thread.start()
     return True
 
 # ฟังก์ชันส่งอีเมล
@@ -236,26 +291,27 @@ def register():
             'username': username,
             'email': email,
             'password': hashed_password,
-            'verified': False,  # ยังไม่ได้ยืนยันอีเมล
+            'verified': False,  # ⚠️ ตั้งเป็น True ชั่วคราว (ข้ามการยืนยันอีเมล)
             'created_at': datetime.now(),
-            'verified_at': None
+            'verified_at': None #datetime.now()
         }
         
         try:
             result = users_collection.insert_one(user_data)
             user_id = str(result.inserted_id)
             
+            ## ⚠️ ปิดการส่งอีเมลชั่วคราว
+            # flash('สมัครสมาชิกสำเร็จ! คุณสามารถเข้าสู่ระบบได้เลย', 'success')
+            
             # สร้าง Token สำหรับยืนยันอีเมล (หมดอายุ 24 ชั่วโมง)
             token = serializer.dumps(email, salt='email-verification')
-            
-            # สร้าง URL ยืนยันอีเมล
             verification_url = url_for('verify_email', token=token, _external=True)
-            
+            # 
             # ส่งอีเมลยืนยัน
             if send_verification_email(email, username, verification_url):
                 flash('สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี', 'success')
             else:
-                flash('สมัครสมาชิกสำเร็จ แต่ไม่สามารถส่งอีเมลยืนยันได้ กรุณาติดต่อผู้ดูแลระบบ', 'error')
+                flash('สมัครสมาชิกสำเร็จ แต่ไม่สามารถส่งอีเมลยืนยันได้', 'error')
             
             return redirect(url_for('login'))
         except Exception as e:
@@ -430,9 +486,9 @@ def login():
         user_data = users_collection.find_one({'username': username})
         
         if user_data and bcrypt.checkpw(password.encode('utf-8'), user_data['password']):
-            # ตรวจสอบว่ายืนยันอีเมลหรือยัง
+            ## ⚠️ ปิดการตรวจสอบ verified ชั่วคราว
             if not user_data.get('verified', False):
-                flash('กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ ตรวจสอบอีเมลของคุณ', 'error')
+                flash('กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ', 'error')
                 return render_template('login.html', unverified_email=user_data.get('email'))
             
             # Login สำเร็จ
@@ -440,7 +496,6 @@ def login():
             login_user(user, remember=True)
             flash(f'ยินดีต้อนรับ {username}!', 'success')
             
-            # ไปหน้าที่ต้องการก่อนหน้า หรือ dashboard
             next_page = request.args.get('next')
             return redirect(next_page if next_page else url_for('dashboard'))
         else:
