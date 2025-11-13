@@ -69,21 +69,6 @@
             border: 1px solid #f5c6cb;
         }
         
-        .info-box {
-            background-color: #e7f3ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .info-box p {
-            color: #333;
-            font-size: 14px;
-            line-height: 1.5;
-            margin: 0;
-        }
-        
         .form-group {
             margin-bottom: 20px;
         }
@@ -220,13 +205,6 @@
         <h1>สมัครสมาชิก</h1>
         <p class="subtitle">เริ่มบันทึกความรู้สึกของคุณวันนี้</p>
         
-        <div class="info-box">
-            <p>
-                ✅ หลังสมัครสมาชิก เราจะส่งอีเมลยืนยันไปให้คุณ<br>
-                กรุณาตรวจสอบอีเมลและคลิกลิงก์ยืนยันก่อนเข้าสู่ระบบ
-            </p>
-        </div>
-        
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -249,7 +227,7 @@
             <div class="form-group">
                 <label>
                     📧 อีเมล
-                    <span class="hint">สำหรับยืนยันบัญชีและกู้คืนรหัสผ่าน</span>
+                    <span class="hint">สำหรับกู้คืนบัญชีในอนาคต</span>
                 </label>
                 <input type="email" name="email" id="email" placeholder="example@email.com" required>
             </div>
