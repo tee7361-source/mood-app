@@ -48,7 +48,7 @@ def send_async_email(app, msg):
     """ส่งอีเมลใน Background Thread"""
     with app.app_context():
         try:
-            with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=30) as server:
                 server.starttls()
                 server.login(MAIL_USERNAME, MAIL_PASSWORD)
                 server.send_message(msg)
