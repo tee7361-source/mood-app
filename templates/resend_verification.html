@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔐 เข้าสู่ระบบ - บันทึกความรู้สึก</title>
+    <title>📨 ส่งอีเมลยืนยันใหม่ - บันทึกความรู้สึก</title>
     <style>
         * {
             margin: 0;
@@ -21,13 +21,13 @@
             padding: 20px;
         }
         
-        .login-container {
+        .resend-container {
             background: white;
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
         }
         
         .logo {
@@ -48,6 +48,7 @@
             color: #666;
             margin-bottom: 30px;
             font-size: 0.9em;
+            line-height: 1.5;
         }
         
         .alert {
@@ -95,7 +96,7 @@
             border-color: #667eea;
         }
         
-        .btn-login {
+        .btn-submit {
             width: 100%;
             padding: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -109,7 +110,7 @@
             margin-top: 10px;
         }
         
-        .btn-login:hover {
+        .btn-submit:hover {
             transform: translateY(-2px);
         }
         
@@ -120,107 +121,113 @@
             font-size: 14px;
         }
         
-        .register-link {
+        .back-link {
             text-align: center;
             margin-top: 20px;
             color: #666;
             font-size: 14px;
         }
         
-        .register-link a {
+        .back-link a {
             color: #667eea;
             text-decoration: none;
             font-weight: 600;
         }
         
-        .register-link a:hover {
+        .back-link a:hover {
             text-decoration: underline;
         }
         
-        .password-toggle {
-            position: relative;
+        .info-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
         
-        .password-toggle input {
-            padding-right: 45px;
+        .info-box p {
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
         }
         
-        .password-toggle .toggle-btn {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0;
-            width: auto;
+        .steps {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .steps h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .steps ol {
+            margin-left: 20px;
+            color: #666;
+        }
+        
+        .steps li {
+            margin-bottom: 8px;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">📔</div>
-        <h1>เข้าสู่ระบบ</h1>
-        <p class="subtitle">บันทึกความรู้สึกของคุณ</p>
+    <div class="resend-container">
+        <div class="logo">📨</div>
+        <h1>ส่งอีเมลยืนยันใหม่</h1>
+        <p class="subtitle">
+            ยังไม่ได้รับอีเมลยืนยัน?<br>
+            เราจะส่งอีเมลใหม่ให้คุณ
+        </p>
         
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }}">
                         {{ message }}
-                        {% if unverified_email and category == 'error' and 'ยืนยันอีเมล' in message %}
-                            <br><br>
-                            <a href="{{ url_for('resend_verification') }}" style="color: inherit; font-weight: 600; text-decoration: underline;">
-                                คลิกที่นี่เพื่อส่งอีเมลยืนยันใหม่
-                            </a>
-                        {% endif %}
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
         
-        <form method="POST" action="{{ url_for('login') }}">
+        <div class="info-box">
+            <p>
+                ⏰ ลิงก์ยืนยันอีเมลจะหมดอายุภายใน 24 ชั่วโมง<br>
+                ถ้าหมดอายุแล้ว กรุณาขอลิงก์ใหม่ที่นี่
+            </p>
+        </div>
+        
+        <div class="steps">
+            <h3>📋 ขั้นตอนการยืนยันอีเมล:</h3>
+            <ol>
+                <li>กรอกอีเมลที่ใช้สมัครสมาชิก</li>
+                <li>กดปุ่ม "ส่งอีเมลยืนยันใหม่"</li>
+                <li>เช็คอีเมล (รวมถึงโฟลเดอร์ Spam)</li>
+                <li>คลิกลิงก์ในอีเมล</li>
+                <li>เข้าสู่ระบบได้เลย!</li>
+            </ol>
+        </div>
+        
+        <form method="POST" action="{{ url_for('resend_verification') }}">
             <div class="form-group">
-                <label>👤 ชื่อผู้ใช้</label>
-                <input type="text" name="username" placeholder="กรอกชื่อผู้ใช้" required autofocus>
+                <label>📧 อีเมล</label>
+                <input type="email" name="email" placeholder="กรอกอีเมลของคุณ" required autofocus>
             </div>
             
-            <div class="form-group">
-                <label>🔒 รหัสผ่าน</label>
-                <div class="password-toggle">
-                    <input type="password" name="password" id="password" placeholder="กรอกรหัสผ่าน" required>
-                    <button type="button" class="toggle-btn" onclick="togglePassword()">👁️</button>
-                </div>
-                <div style="text-align: right; margin-top: 8px;">
-                    <a href="{{ url_for('forgot_password') }}" style="color: #667eea; text-decoration: none; font-size: 13px;">ลืมรหัสผ่าน?</a>
-                </div>
-            </div>
-            
-            <button type="submit" class="btn-login">🔓 เข้าสู่ระบบ</button>
+            <button type="submit" class="btn-submit">📨 ส่งอีเมลยืนยันใหม่</button>
         </form>
         
         <div class="divider">หรือ</div>
         
-        <div class="register-link">
-            ยังไม่มีบัญชี? <a href="{{ url_for('register') }}">สมัครสมาชิก</a>
+        <div class="back-link">
+            <a href="{{ url_for('login') }}">← กลับไปหน้าเข้าสู่ระบบ</a>
         </div>
     </div>
-    
-    <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const toggleBtn = document.querySelector('.toggle-btn');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleBtn.textContent = '🙈';
-            } else {
-                passwordInput.type = 'password';
-                toggleBtn.textContent = '👁️';
-            }
-        }
-    </script>
 </body>
 </html>
