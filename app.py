@@ -291,27 +291,27 @@ def register():
             'username': username,
             'email': email,
             'password': hashed_password,
-            'verified': False,  # ⚠️ ตั้งเป็น True ชั่วคราว (ข้ามการยืนยันอีเมล)
+            'verified': True,  # ⚠️ ตั้งเป็น True ชั่วคราว (ข้ามการยืนยันอีเมล)
             'created_at': datetime.now(),
-            'verified_at': None #datetime.now()
+            'verified_at': datetime.now()
         }
         
         try:
             result = users_collection.insert_one(user_data)
             user_id = str(result.inserted_id)
             
-            ## ⚠️ ปิดการส่งอีเมลชั่วคราว
-            # flash('สมัครสมาชิกสำเร็จ! คุณสามารถเข้าสู่ระบบได้เลย', 'success')
+            # ⚠️ ปิดการส่งอีเมลชั่วคราว
+            flash('สมัครสมาชิกสำเร็จ! คุณสามารถเข้าสู่ระบบได้เลย', 'success')
             
-            # สร้าง Token สำหรับยืนยันอีเมล (หมดอายุ 24 ชั่วโมง)
-            token = serializer.dumps(email, salt='email-verification')
-            verification_url = url_for('verify_email', token=token, _external=True)
+            # # สร้าง Token สำหรับยืนยันอีเมล (หมดอายุ 24 ชั่วโมง)
+            # token = serializer.dumps(email, salt='email-verification')
+            # verification_url = url_for('verify_email', token=token, _external=True)
             # 
-            # ส่งอีเมลยืนยัน
-            if send_verification_email(email, username, verification_url):
-                flash('สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี', 'success')
-            else:
-                flash('สมัครสมาชิกสำเร็จ แต่ไม่สามารถส่งอีเมลยืนยันได้', 'error')
+            # # ส่งอีเมลยืนยัน
+            # if send_verification_email(email, username, verification_url):
+            #     flash('สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี', 'success')
+            # else:
+            #     flash('สมัครสมาชิกสำเร็จ แต่ไม่สามารถส่งอีเมลยืนยันได้', 'error')
             
             return redirect(url_for('login'))
         except Exception as e:
@@ -486,10 +486,10 @@ def login():
         user_data = users_collection.find_one({'username': username})
         
         if user_data and bcrypt.checkpw(password.encode('utf-8'), user_data['password']):
-            ## ⚠️ ปิดการตรวจสอบ verified ชั่วคราว
-            if not user_data.get('verified', False):
-                flash('กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ', 'error')
-                return render_template('login.html', unverified_email=user_data.get('email'))
+            # ⚠️ ปิดการตรวจสอบ verified ชั่วคราว
+            # if not user_data.get('verified', False):
+            #     flash('กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ', 'error')
+            #     return render_template('login.html', unverified_email=user_data.get('email'))
             
             # Login สำเร็จ
             user = User(user_data)
