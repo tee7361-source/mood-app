@@ -10,6 +10,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itsdangerous import URLSafeTimedSerializer
+from threading import Thread
 
 # โหลดค่าจาก .env
 load_dotenv()
@@ -41,6 +42,34 @@ users_collection = db['users']  # Collection ใหม่สำหรับเ�
 
 # สร้าง index สำหรับ username (ไม่ให้ซ้ำ)
 users_collection.create_index('username', unique=True)
+
+# ฟังก์ชันส่งอีเมลแบบ Async (Background Thread)
+def send_async_email(app, msg):
+    """ส่งอีเมลใน Background Thread"""
+    with app.app_context():
+        try:
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
+                server.starttls()
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                server.send_message(msg)
+                print("✅ Email sent successfully")
+        except Exception as e:
+            print(f"❌ Error sending email: {e}")
+
+# ฟังก์ชันส่งอีเมล
+def send_email(subject, recipient, html_content):
+    """สร้างและส่งอีเมลแบบ Async"""
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = MAIL_USERNAME
+    msg['To'] = recipient
+    
+    part = MIMEText(html_content, 'html')
+    msg.attach(part)
+    
+    # ส่งอีเมลใน Background Thread
+    Thread(target=send_async_email, args=(app, msg)).start()
+    return True
 
 # ฟังก์ชันส่งอีเมล
 def send_reset_email(user_email, reset_url):
@@ -108,68 +137,36 @@ def send_reset_email(user_email, reset_url):
 # ฟังก์ชันส่งอีเมลยืนยัน
 def send_verification_email(user_email, username, verification_url):
     """ส่งอีเมลยืนยันบัญชี"""
-    try:
-        # สร้างข้อความอีเมล
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = '✅ ยืนยันอีเมล - Mood Tracker'
-        msg['From'] = MAIL_USERNAME
-        msg['To'] = user_email
-        
-        # เนื้อหาอีเมล (HTML)
-        html = f"""
-        <html>
-          <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-              <h1 style="color: #667eea; text-align: center;">📔 Mood Tracker</h1>
-              <h2 style="color: #333;">ยินดีต้อนรับ {username}! 🎉</h2>
-              <p style="color: #666; line-height: 1.6;">
-                ขอบคุณที่สมัครสมาชิก! กรุณายืนยันอีเมลของคุณเพื่อเริ่มใช้งานระบบบันทึกความรู้สึก
-              </p>
-              <p style="color: #666; line-height: 1.6;">
-                คลิกปุ่มด้านล่างเพื่อยืนยันอีเมล:
-              </p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{verification_url}" 
-                   style="background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%); 
-                          color: white; 
-                          padding: 15px 30px; 
-                          text-decoration: none; 
-                          border-radius: 8px; 
-                          font-weight: bold;
-                          display: inline-block;">
-                  ✅ ยืนยันอีเมล
-                </a>
-              </div>
-              <p style="color: #999; font-size: 14px;">
-                ลิงก์นี้จะหมดอายุภายใน <strong>24 ชั่วโมง</strong>
-              </p>
-              <p style="color: #999; font-size: 14px;">
-                ถ้าคุณไม่ได้สมัครสมาชิก กรุณาเพิกเฉยอีเมลนี้
-              </p>
-              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-              <p style="color: #999; font-size: 12px; text-align: center;">
-                หรือคัดลอกลิงก์นี้:<br>
-                <a href="{verification_url}" style="color: #667eea;">{verification_url}</a>
-              </p>
-            </div>
-          </body>
-        </html>
-        """
-        
-        # แนบเนื้อหา HTML
-        part = MIMEText(html, 'html')
-        msg.attach(part)
-        
-        # เชื่อมต่อ Gmail SMTP
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.starttls()
-            server.login(MAIL_USERNAME, MAIL_PASSWORD)
-            server.send_message(msg)
-        
-        return True
-    except Exception as e:
-        print(f"Error sending verification email: {e}")
-        return False
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h1 style="color: #667eea; text-align: center;">📔 Mood Tracker</h1>
+          <h2 style="color: #333;">ยินดีต้อนรับ {username}! 🎉</h2>
+          <p style="color: #666; line-height: 1.6;">
+            ขอบคุณที่สมัครสมาชิก! กรุณายืนยันอีเมลของคุณเพื่อเริ่มใช้งานระบบบันทึกความรู้สึก
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="{verification_url}" 
+               style="background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%); 
+                      color: white; 
+                      padding: 15px 30px; 
+                      text-decoration: none; 
+                      border-radius: 8px; 
+                      font-weight: bold;
+                      display: inline-block;">
+              ✅ ยืนยันอีเมล
+            </a>
+          </div>
+          <p style="color: #999; font-size: 14px;">
+            ลิงก์นี้จะหมดอายุภายใน <strong>24 ชั่วโมง</strong>
+          </p>
+        </div>
+      </body>
+    </html>
+    """
+    
+    return send_email('✅ ยืนยันอีเมล - Mood Tracker', user_email, html)
 
 # คลาส User สำหรับ Flask-Login
 class User(UserMixin):
