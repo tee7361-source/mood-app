@@ -105,6 +105,72 @@ def send_reset_email(user_email, reset_url):
         print(f"Error sending email: {e}")
         return False
 
+# ฟังก์ชันส่งอีเมลยืนยัน
+def send_verification_email(user_email, username, verification_url):
+    """ส่งอีเมลยืนยันบัญชี"""
+    try:
+        # สร้างข้อความอีเมล
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = '✅ ยืนยันอีเมล - Mood Tracker'
+        msg['From'] = MAIL_USERNAME
+        msg['To'] = user_email
+        
+        # เนื้อหาอีเมล (HTML)
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h1 style="color: #667eea; text-align: center;">📔 Mood Tracker</h1>
+              <h2 style="color: #333;">ยินดีต้อนรับ {username}! 🎉</h2>
+              <p style="color: #666; line-height: 1.6;">
+                ขอบคุณที่สมัครสมาชิก! กรุณายืนยันอีเมลของคุณเพื่อเริ่มใช้งานระบบบันทึกความรู้สึก
+              </p>
+              <p style="color: #666; line-height: 1.6;">
+                คลิกปุ่มด้านล่างเพื่อยืนยันอีเมล:
+              </p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{verification_url}" 
+                   style="background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%); 
+                          color: white; 
+                          padding: 15px 30px; 
+                          text-decoration: none; 
+                          border-radius: 8px; 
+                          font-weight: bold;
+                          display: inline-block;">
+                  ✅ ยืนยันอีเมล
+                </a>
+              </div>
+              <p style="color: #999; font-size: 14px;">
+                ลิงก์นี้จะหมดอายุภายใน <strong>24 ชั่วโมง</strong>
+              </p>
+              <p style="color: #999; font-size: 14px;">
+                ถ้าคุณไม่ได้สมัครสมาชิก กรุณาเพิกเฉยอีเมลนี้
+              </p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px; text-align: center;">
+                หรือคัดลอกลิงก์นี้:<br>
+                <a href="{verification_url}" style="color: #667eea;">{verification_url}</a>
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+        
+        # แนบเนื้อหา HTML
+        part = MIMEText(html, 'html')
+        msg.attach(part)
+        
+        # เชื่อมต่อ Gmail SMTP
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(MAIL_USERNAME, MAIL_PASSWORD)
+            server.send_message(msg)
+        
+        return True
+    except Exception as e:
+        print(f"Error sending verification email: {e}")
+        return False
+
 # คลาส User สำหรับ Flask-Login
 class User(UserMixin):
     def __init__(self, user_data):
@@ -173,12 +239,27 @@ def register():
             'username': username,
             'email': email,
             'password': hashed_password,
-            'created_at': datetime.now()
+            'verified': False,  # ยังไม่ได้ยืนยันอีเมล
+            'created_at': datetime.now(),
+            'verified_at': None
         }
         
         try:
-            users_collection.insert_one(user_data)
-            flash('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ', 'success')
+            result = users_collection.insert_one(user_data)
+            user_id = str(result.inserted_id)
+            
+            # สร้าง Token สำหรับยืนยันอีเมล (หมดอายุ 24 ชั่วโมง)
+            token = serializer.dumps(email, salt='email-verification')
+            
+            # สร้าง URL ยืนยันอีเมล
+            verification_url = url_for('verify_email', token=token, _external=True)
+            
+            # ส่งอีเมลยืนยัน
+            if send_verification_email(email, username, verification_url):
+                flash('สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี', 'success')
+            else:
+                flash('สมัครสมาชิกสำเร็จ แต่ไม่สามารถส่งอีเมลยืนยันได้ กรุณาติดต่อผู้ดูแลระบบ', 'error')
+            
             return redirect(url_for('login'))
         except Exception as e:
             flash('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', 'error')
@@ -269,6 +350,71 @@ def reset_password(token):
     
     return render_template('reset_password.html', token=token)
 
+# ยืนยันอีเมล
+@app.route('/verify-email/<token>')
+def verify_email(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # ตรวจสอบ Token (หมดอายุภายใน 24 ชั่วโมง = 86400 วินาที)
+        email = serializer.loads(token, salt='email-verification', max_age=86400)
+    except:
+        flash('ลิงก์ยืนยันอีเมลหมดอายุหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่', 'error')
+        return redirect(url_for('resend_verification'))
+    
+    # อัพเดทสถานะยืนยันอีเมล
+    result = users_collection.update_one(
+        {'email': email, 'verified': False},
+        {'$set': {'verified': True, 'verified_at': datetime.now()}}
+    )
+    
+    if result.modified_count > 0:
+        flash('ยืนยันอีเมลสำเร็จ! ตอนนี้คุณสามารถเข้าสู่ระบบได้แล้ว', 'success')
+    else:
+        # อาจยืนยันไปแล้ว
+        user = users_collection.find_one({'email': email})
+        if user and user.get('verified', False):
+            flash('อีเมลนี้ได้รับการยืนยันแล้ว กรุณาเข้าสู่ระบบ', 'success')
+        else:
+            flash('ไม่พบบัญชีที่ตรงกับอีเมลนี้', 'error')
+    
+    return redirect(url_for('login'))
+
+# ส่งอีเมลยืนยันใหม่
+@app.route('/resend-verification', methods=['GET', 'POST'])
+def resend_verification():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        
+        if not email:
+            flash('กรุณากรอกอีเมล', 'error')
+            return render_template('resend_verification.html')
+        
+        # หาผู้ใช้ที่ยังไม่ได้ยืนยันอีเมล
+        user = users_collection.find_one({'email': email, 'verified': False})
+        
+        if user:
+            # สร้าง Token ใหม่
+            token = serializer.dumps(email, salt='email-verification')
+            verification_url = url_for('verify_email', token=token, _external=True)
+            
+            # ส่งอีเมลยืนยันใหม่
+            if send_verification_email(email, user['username'], verification_url):
+                flash('ส่งอีเมลยืนยันใหม่เรียบร้อย กรุณาตรวจสอบอีเมลของคุณ', 'success')
+            else:
+                flash('เกิดข้อผิดพลาดในการส่งอีเมล กรุณาลองใหม่อีกครั้ง', 'error')
+        else:
+            # ไม่บอกว่าไม่มีอีเมล หรือยืนยันแล้ว (ป้องกันการหาอีเมล)
+            flash('ส่งอีเมลยืนยันใหม่เรียบร้อย กรุณาตรวจสอบอีเมลของคุณ', 'success')
+        
+        return redirect(url_for('resend_verification'))
+    
+    return render_template('resend_verification.html')
+
 # หน้า Login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -287,6 +433,11 @@ def login():
         user_data = users_collection.find_one({'username': username})
         
         if user_data and bcrypt.checkpw(password.encode('utf-8'), user_data['password']):
+            # ตรวจสอบว่ายืนยันอีเมลหรือยัง
+            if not user_data.get('verified', False):
+                flash('กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ ตรวจสอบอีเมลของคุณ', 'error')
+                return render_template('login.html', unverified_email=user_data.get('email'))
+            
             # Login สำเร็จ
             user = User(user_data)
             login_user(user, remember=True)
