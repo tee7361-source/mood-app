@@ -158,7 +158,138 @@ def logout():
 def dashboard():
     # ดึงเฉพาะข้อมูลของผู้ใช้คนนี้
     moods = list(moods_collection.find({'user_id': current_user.id}).sort('created_at', -1))
-    return render_template('dashboard.html', moods=moods)
+    return render_template('dashboard.html', moods=moods, active_page='dashboard')
+
+# หน้าประวัติรายการ (Calendar)
+@app.route('/history')
+@login_required
+def history():
+    moods = list(moods_collection.find({'user_id': current_user.id}).sort('created_at', -1))
+    
+    # แปลง ObjectId เป็น string เพื่อให้ JSON serialize ได้
+    moods_json = []
+    for mood in moods:
+        mood_dict = {
+            'id': str(mood['_id']),
+            'date': mood.get('date', ''),
+            'time': mood.get('time', ''),
+            'color': mood.get('color', ''),
+            'trigger': mood.get('trigger', ''),
+            'emotion': mood.get('emotion', ''),
+            'detail': mood.get('detail', '')
+        }
+        moods_json.append(mood_dict)
+    
+    return render_template('history.html', moods=moods_json, active_page='history')
+
+# หน้าสถิติ
+@app.route('/statistics')
+@login_required
+def statistics():
+    moods = list(moods_collection.find({'user_id': current_user.id}))
+    
+    # คำนวณสถิติ
+    total_moods = len(moods)
+    
+    # นับตามสี
+    color_stats = {
+        'แดง': len([m for m in moods if m.get('color') == 'แดง']),
+        'เหลือง': len([m for m in moods if m.get('color') == 'เหลือง']),
+        'น้ำเงิน': len([m for m in moods if m.get('color') == 'น้ำเงิน']),
+        'เขียว': len([m for m in moods if m.get('color') == 'เขียว'])
+    }
+    
+    # นับตามอารมณ์ (Top 10)
+    from collections import Counter
+    emotions = [m.get('emotion', '') for m in moods if m.get('emotion')]
+    emotion_stats = dict(Counter(emotions).most_common(10))
+    
+    # นับตามสิ่งกระตุ้น (Top 10)
+    triggers = [m.get('trigger', '') for m in moods if m.get('trigger')]
+    trigger_stats = dict(Counter(triggers).most_common(10))
+    
+    return render_template('statistics.html', 
+                         total_moods=total_moods,
+                         color_stats=color_stats,
+                         emotion_stats=emotion_stats,
+                         trigger_stats=trigger_stats,
+                         active_page='statistics')
+
+# หน้าตั้งค่าบัญชี
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'update_profile':
+            new_username = request.form.get('username', '').strip()
+            new_email = request.form.get('email', '').strip()
+            
+            # ตรวจสอบ username ซ้ำ
+            if new_username != current_user.username:
+                if users_collection.find_one({'username': new_username}):
+                    flash('ชื่อผู้ใช้นี้ถูกใช้งานแล้ว', 'error')
+                    return redirect(url_for('settings'))
+            
+            # ตรวจสอบ email ซ้ำ
+            if new_email != current_user.email:
+                if users_collection.find_one({'email': new_email}):
+                    flash('อีเมลนี้ถูกใช้งานแล้ว', 'error')
+                    return redirect(url_for('settings'))
+            
+            # อัพเดทข้อมูล
+            users_collection.update_one(
+                {'_id': ObjectId(current_user.id)},
+                {'$set': {
+                    'username': new_username,
+                    'email': new_email,
+                    'updated_at': datetime.now()
+                }}
+            )
+            flash('อัพเดทข้อมูลส่วนตัวสำเร็จ!', 'success')
+            return redirect(url_for('settings'))
+        
+        elif action == 'change_password':
+            old_password = request.form.get('old_password', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_password', '')
+            
+            # ตรวจสอบรหัสผ่านเดิม
+            user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+            if not bcrypt.checkpw(old_password.encode('utf-8'), user_data['password']):
+                flash('รหัสผ่านเดิมไม่ถูกต้อง', 'error')
+                return redirect(url_for('settings'))
+            
+            if len(new_password) < 6:
+                flash('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'error')
+                return redirect(url_for('settings'))
+            
+            if new_password != confirm_password:
+                flash('รหัสผ่านใหม่ไม่ตรงกัน', 'error')
+                return redirect(url_for('settings'))
+            
+            # อัพเดทรหัสผ่าน
+            hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+            users_collection.update_one(
+                {'_id': ObjectId(current_user.id)},
+                {'$set': {'password': hashed_password}}
+            )
+            flash('เปลี่ยนรหัสผ่านสำเร็จ!', 'success')
+            return redirect(url_for('settings'))
+        
+        elif action == 'update_theme':
+            theme = request.form.get('theme', 'default')
+            users_collection.update_one(
+                {'_id': ObjectId(current_user.id)},
+                {'$set': {'theme': theme}}
+            )
+            flash('เปลี่ยน Theme สำเร็จ!', 'success')
+            return redirect(url_for('settings'))
+    
+    # ดึงข้อมูลผู้ใช้
+    user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+    return render_template('settings.html', user=user_data, active_page='settings')
 
 # บันทึกความรู้สึกใหม่
 @app.route('/add', methods=['POST'])

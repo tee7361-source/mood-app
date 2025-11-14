@@ -1,0 +1,358 @@
+{% extends "base_layout.html" %}
+
+{% block title %}ประวัติรายการ - Mood Tracker{% endblock %}
+{% block page_title %}📅 ประวัติรายการ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-container {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+    }
+    
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    
+    .month-nav {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .month-nav button {
+        padding: 10px 15px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 18px;
+    }
+    
+    .current-month {
+        font-size: 1.5em;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+    }
+    
+    .day-header {
+        text-align: center;
+        font-weight: 600;
+        color: #667eea;
+        padding: 10px;
+    }
+    
+    .day-cell {
+        aspect-ratio: 1;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+    
+    .day-cell:hover {
+        border-color: #667eea;
+        transform: scale(1.05);
+    }
+    
+    .day-cell.empty {
+        border: none;
+        cursor: default;
+    }
+    
+    .day-cell.empty:hover {
+        transform: none;
+    }
+    
+    .day-number {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .day-moods {
+        display: flex;
+        gap: 3px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .mood-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    
+    .mood-dot.red { background: #ff6b6b; }
+    .mood-dot.yellow { background: #ffd93d; }
+    .mood-dot.blue { background: #6bcfff; }
+    .mood-dot.green { background: #51cf66; }
+    
+    .day-cell.today {
+        border-color: #667eea;
+        border-width: 3px;
+    }
+    
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .close {
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #999;
+    }
+    
+    .close:hover {
+        color: #333;
+    }
+    
+    .mood-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border-left: 5px solid;
+    }
+    
+    .mood-item.red { border-left-color: #ff6b6b; }
+    .mood-item.yellow { border-left-color: #ffd93d; }
+    .mood-item.blue { border-left-color: #6bcfff; }
+    .mood-item.green { border-left-color: #51cf66; }
+    
+    @media (max-width: 768px) {
+        .calendar {
+            gap: 5px;
+        }
+        
+        .day-cell {
+            padding: 5px;
+        }
+        
+        .day-number {
+            font-size: 12px;
+        }
+        
+        .mood-dot {
+            width: 6px;
+            height: 6px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calendar-container">
+    <div class="calendar-header">
+        <div class="month-nav">
+            <button onclick="previousMonth()">◀</button>
+            <span class="current-month" id="currentMonth"></span>
+            <button onclick="nextMonth()">▶</button>
+        </div>
+        <button onclick="goToToday()" style="background: #51cf66;">📅 วันนี้</button>
+    </div>
+    
+    <div class="calendar" id="calendar"></div>
+</div>
+
+<!-- Modal แสดงรายการบันทึกในวันนั้น -->
+<div id="moodModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle"></h2>
+            <span class="close" onclick="closeModal()">&times;</span>
+        </div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script>
+    // ข้อมูลบันทึกจาก Server
+    const moods = {{ moods|tojson }};
+    
+    let currentDate = new Date();
+    
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        // อัพเดทหัวข้อเดือน
+        const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                           'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year + 543}`;
+        
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        const calendar = document.getElementById('calendar');
+        calendar.innerHTML = '';
+        
+        // หัวข้อวัน
+        const dayHeaders = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+        dayHeaders.forEach(day => {
+            const header = document.createElement('div');
+            header.className = 'day-header';
+            header.textContent = day;
+            calendar.appendChild(header);
+        });
+        
+        // ช่องว่างก่อนวันที่ 1
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'day-cell empty';
+            calendar.appendChild(empty);
+        }
+        
+        // วันที่ในเดือน
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const cell = document.createElement('div');
+            cell.className = 'day-cell';
+            
+            // เช็คว่าเป็นวันนี้ไหม
+            if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+                cell.classList.add('today');
+            }
+            
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            cell.appendChild(dayNumber);
+            
+            // หาบันทึกในวันนี้
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayMoods = moods.filter(m => m.date === dateStr);
+            
+            if (dayMoods.length > 0) {
+                const moodsContainer = document.createElement('div');
+                moodsContainer.className = 'day-moods';
+                
+                // แสดงจุดสีตามจำนวนบันทึก (สูงสุด 4 จุด)
+                dayMoods.slice(0, 4).forEach(mood => {
+                    const dot = document.createElement('div');
+                    dot.className = 'mood-dot';
+                    if (mood.color === 'แดง') dot.classList.add('red');
+                    else if (mood.color === 'เหลือง') dot.classList.add('yellow');
+                    else if (mood.color === 'น้ำเงิน') dot.classList.add('blue');
+                    else if (mood.color === 'เขียว') dot.classList.add('green');
+                    moodsContainer.appendChild(dot);
+                });
+                
+                cell.appendChild(moodsContainer);
+                cell.onclick = () => showMoods(dateStr, dayMoods);
+            }
+            
+            calendar.appendChild(cell);
+        }
+    }
+    
+    function showMoods(date, dayMoods) {
+        const modal = document.getElementById('moodModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        
+        modalTitle.textContent = `📅 ${date}`;
+        
+        let html = '';
+        dayMoods.forEach(mood => {
+            let colorClass = '';
+            if (mood.color === 'แดง') colorClass = 'red';
+            else if (mood.color === 'เหลือง') colorClass = 'yellow';
+            else if (mood.color === 'น้ำเงิน') colorClass = 'blue';
+            else if (mood.color === 'เขียว') colorClass = 'green';
+            
+            html += `
+                <div class="mood-item ${colorClass}">
+                    <div style="font-weight: 600; margin-bottom: 5px;">
+                        🕐 ${mood.time} | ${mood.color}
+                    </div>
+                    <div style="font-size: 18px; font-weight: 600; margin: 10px 0;">
+                        😊 ${mood.emotion}
+                    </div>
+                    <div style="color: #666; margin-bottom: 5px;">
+                        💥 ${mood.trigger}
+                    </div>
+                    <div style="color: #555;">
+                        ${mood.detail}
+                    </div>
+                </div>
+            `;
+        });
+        
+        modalBody.innerHTML = html;
+        modal.style.display = 'block';
+    }
+    
+    function closeModal() {
+        document.getElementById('moodModal').style.display = 'none';
+    }
+    
+    function previousMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    }
+    
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    }
+    
+    function goToToday() {
+        currentDate = new Date();
+        renderCalendar();
+    }
+    
+    // ปิด modal เมื่อคลิกนอก modal
+    window.onclick = function(event) {
+        const modal = document.getElementById('moodModal');
+        if (event.target === modal) {
+            closeModal();
+        }
+    }
+    
+    // เรียก render ครั้งแรก
+    renderCalendar();
+</script>
+{% endblock %}

@@ -1,0 +1,347 @@
+{% extends "base_layout.html" %}
+
+{% block title %}ตั้งค่าบัญชี - Mood Tracker{% endblock %}
+{% block page_title %}⚙️ ตั้งค่าบัญชี{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 800px;
+    }
+    
+    .settings-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .section-header i {
+        font-size: 1.5em;
+        color: #667eea;
+    }
+    
+    .section-header h3 {
+        font-size: 1.3em;
+        color: #333;
+    }
+    
+    .profile-avatar-section {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3em;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .avatar-info h4 {
+        font-size: 1.2em;
+        margin-bottom: 5px;
+    }
+    
+    .avatar-info p {
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 600;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+    
+    input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .btn-primary {
+        padding: 12px 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+    }
+    
+    .theme-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .theme-option {
+        position: relative;
+    }
+    
+    .theme-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+    
+    .theme-label {
+        display: block;
+        padding: 20px;
+        border: 3px solid #e0e0e0;
+        border-radius: 10px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    
+    .theme-option input[type="radio"]:checked + .theme-label {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    
+    .theme-preview {
+        width: 100%;
+        height: 60px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .theme-default { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .theme-dark { background: linear-gradient(135deg, #2d3436 0%, #000000 100%); }
+    .theme-pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .theme-ocean { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    
+    .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #667eea;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+    
+    .info-box p {
+        color: #333;
+        font-size: 14px;
+        margin: 0;
+    }
+    
+    .danger-zone {
+        background: #fff5f5;
+        border: 2px solid #ff6b6b;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+    
+    .danger-zone h4 {
+        color: #ff6b6b;
+        margin-bottom: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-avatar-section {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .theme-options {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- ข้อมูลส่วนตัว -->
+    <div class="settings-section">
+        <div class="section-header">
+            <i class="fas fa-user"></i>
+            <h3>ข้อมูลส่วนตัว</h3>
+        </div>
+        
+        <div class="profile-avatar-section">
+            <div class="profile-avatar">
+                {{ user.username[0].upper() }}
+            </div>
+            <div class="avatar-info">
+                <h4>{{ user.username }}</h4>
+                <p>สมาชิกตั้งแต่ {{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}</p>
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('settings') }}">
+            <input type="hidden" name="action" value="update_profile">
+            
+            <div class="form-group">
+                <label>👤 ชื่อผู้ใช้</label>
+                <input type="text" name="username" value="{{ user.username }}" required minlength="3">
+            </div>
+            
+            <div class="form-group">
+                <label>📧 อีเมล</label>
+                <input type="email" name="email" value="{{ user.email }}" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง
+            </button>
+        </form>
+    </div>
+    
+    <!-- เปลี่ยนรหัสผ่าน -->
+    <div class="settings-section">
+        <div class="section-header">
+            <i class="fas fa-lock"></i>
+            <h3>เปลี่ยนรหัสผ่าน</h3>
+        </div>
+        
+        <form method="POST" action="{{ url_for('settings') }}">
+            <input type="hidden" name="action" value="change_password">
+            
+            <div class="form-group">
+                <label>🔒 รหัสผ่านเดิม</label>
+                <input type="password" name="old_password" placeholder="กรอกรหัสผ่านเดิม" required>
+            </div>
+            
+            <div class="form-group">
+                <label>🔑 รหัสผ่านใหม่</label>
+                <input type="password" name="new_password" placeholder="กรอกรหัสผ่านใหม่" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label>✅ ยืนยันรหัสผ่านใหม่</label>
+                <input type="password" name="confirm_password" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
+            </button>
+            
+            <div class="info-box">
+                <p>💡 รหัสผ่านควรมีอย่างน้อย 6 ตัวอักษร และผสมตัวอักษรกับตัวเลข</p>
+            </div>
+        </form>
+    </div>
+    
+    <!-- ธีมส่วนตัว -->
+    <div class="settings-section">
+        <div class="section-header">
+            <i class="fas fa-palette"></i>
+            <h3>ธีมส่วนตัว</h3>
+        </div>
+        
+        <form method="POST" action="{{ url_for('settings') }}">
+            <input type="hidden" name="action" value="update_theme">
+            
+            <div class="theme-options">
+                <div class="theme-option">
+                    <input type="radio" name="theme" value="default" id="theme-default" 
+                           {% if not user.get('theme') or user.get('theme') == 'default' %}checked{% endif %}>
+                    <label for="theme-default" class="theme-label">
+                        <div class="theme-preview theme-default"></div>
+                        <strong>Default</strong>
+                    </label>
+                </div>
+                
+                <div class="theme-option">
+                    <input type="radio" name="theme" value="dark" id="theme-dark"
+                           {% if user.get('theme') == 'dark' %}checked{% endif %}>
+                    <label for="theme-dark" class="theme-label">
+                        <div class="theme-preview theme-dark"></div>
+                        <strong>Dark</strong>
+                    </label>
+                </div>
+                
+                <div class="theme-option">
+                    <input type="radio" name="theme" value="pink" id="theme-pink"
+                           {% if user.get('theme') == 'pink' %}checked{% endif %}>
+                    <label for="theme-pink" class="theme-label">
+                        <div class="theme-preview theme-pink"></div>
+                        <strong>Pink</strong>
+                    </label>
+                </div>
+                
+                <div class="theme-option">
+                    <input type="radio" name="theme" value="ocean" id="theme-ocean"
+                           {% if user.get('theme') == 'ocean' %}checked{% endif %}>
+                    <label for="theme-ocean" class="theme-label">
+                        <div class="theme-preview theme-ocean"></div>
+                        <strong>Ocean</strong>
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary" style="margin-top: 20px;">
+                <i class="fas fa-paint-brush"></i> เปลี่ยนธีม
+            </button>
+            
+            <div class="info-box">
+                <p>🎨 ธีมจะถูกนำไปใช้ในทุกหน้าของคุณ (Coming Soon!)</p>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Danger Zone -->
+    <div class="settings-section">
+        <div class="section-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Danger Zone</h3>
+        </div>
+        
+        <div class="danger-zone">
+            <h4>⚠️ ลบบัญชี</h4>
+            <p style="color: #666; margin-bottom: 15px;">
+                การลบบัญชีจะลบข้อมูลทั้งหมดของคุณอย่างถาวร ไม่สามารถกู้คืนได้
+            </p>
+            <button class="btn-primary" style="background: #ff6b6b;" onclick="alert('ฟีเจอร์นี้กำลังพัฒนา')">
+                <i class="fas fa-trash"></i> ลบบัญชี
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
