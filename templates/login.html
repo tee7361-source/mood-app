@@ -170,6 +170,12 @@
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }}">
                         {{ message }}
+                        {% if unverified_email and category == 'error' and 'ยืนยันอีเมล' in message %}
+                            <br><br>
+                            <a href="{{ url_for('resend_verification') }}" style="color: inherit; font-weight: 600; text-decoration: underline;">
+                                คลิกที่นี่เพื่อส่งอีเมลยืนยันใหม่
+                            </a>
+                        {% endif %}
                     </div>
                 {% endfor %}
             {% endif %}

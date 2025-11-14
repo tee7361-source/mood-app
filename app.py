@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -16,7 +16,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-product
 # ตั้งค่า Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'  # หน้าที่ redirect ไปถ้ายังไม่ login
+login_manager.login_view = 'login'
 login_manager.login_message = 'กรุณาเข้าสู่ระบบก่อนใช้งาน'
 
 # เชื่อมต่อ MongoDB
@@ -26,7 +26,7 @@ client = MongoClient(MONGODB_URI)
 # เลือก Database และ Collections
 db = client['mood_tracker']
 moods_collection = db['moods']
-users_collection = db['users']  # Collection ใหม่สำหรับเก็บข้อมูลผู้ใช้
+users_collection = db['users']
 
 # สร้าง index สำหรับ username (ไม่ให้ซ้ำ)
 users_collection.create_index('username', unique=True)
@@ -165,7 +165,7 @@ def dashboard():
 @login_required
 def add_mood():
     mood_data = {
-        'user_id': current_user.id,  # เพิ่ม user_id เพื่อแยกข้อมูลแต่ละคน
+        'user_id': current_user.id,
         'username': current_user.username,
         'date': request.form['date'],
         'time': request.form['time'],
@@ -191,7 +191,7 @@ def edit_mood(mood_id):
     # หารายการที่ต้องการแก้ไข และเช็คว่าเป็นของผู้ใช้คนนี้
     mood_to_edit = moods_collection.find_one({
         '_id': ObjectId(mood_id),
-        'user_id': current_user.id  # ต้องเป็นของคนนี้เท่านั้น
+        'user_id': current_user.id
     })
     
     if mood_to_edit is None:
