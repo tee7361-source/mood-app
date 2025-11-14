@@ -349,6 +349,108 @@
             border-radius: 12px;
             color: #999;
         }
+        
+        /* Tooltip Styles */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: help;
+            transition: transform 0.2s;
+        }
+        
+        .tooltip-icon:hover {
+            transform: scale(1.1);
+        }
+        
+        .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            z-index: 1000;
+            background-color: #333;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 350px;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.3s, visibility 0.3s;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .tooltip-content::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 8px 8px 8px;
+            border-style: solid;
+            border-color: transparent transparent #333 transparent;
+        }
+        
+        .tooltip-container:hover .tooltip-content,
+        .tooltip-container.active .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip-content strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 15px;
+            color: #ffd93d;
+        }
+        
+        .color-meanings {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .color-meaning-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            gap: 10px;
+        }
+        
+        .color-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .color-dot.red { background-color: #ff6b6b; }
+        .color-dot.yellow { background-color: #ffd93d; }
+        .color-dot.blue { background-color: #6bcfff; }
+        .color-dot.green { background-color: #51cf66; }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .tooltip-content {
+                width: 280px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -396,7 +498,34 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>🎨 สีที่แทนความรู้สึก:</label>
+                    <label>
+                        🎨 สีที่แทนความรู้สึก:
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon">ℹ️</span>
+                            <div class="tooltip-content">
+                                <strong>💡 ความหมายของสี</strong>
+                                <p>สีใช้เพื่อทำให้ระบุความรู้สึกได้ง่ายและรวดเร็ว สีแต่ละสีมีความหมายที่ต่างกันขึ้นอยู่กับ<strong>ระดับพลังงาน</strong>และ<strong>ความพึงพอใจ</strong></p>
+                                <div class="color-meanings">
+                                    <div class="color-meaning-item">
+                                        <span class="color-dot red"></span>
+                                        <span><strong>แดง:</strong> พลังงานสูง + ไม่พอใจ</span>
+                                    </div>
+                                    <div class="color-meaning-item">
+                                        <span class="color-dot yellow"></span>
+                                        <span><strong>เหลือง:</strong> พลังงานสูง + พอใจ</span>
+                                    </div>
+                                    <div class="color-meaning-item">
+                                        <span class="color-dot blue"></span>
+                                        <span><strong>ฟ้า:</strong> พลังงานต่ำ + ไม่พอใจ</span>
+                                    </div>
+                                    <div class="color-meaning-item">
+                                        <span class="color-dot green"></span>
+                                        <span><strong>เขียว:</strong> พลังงานต่ำ + พอใจ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </span>
+                    </label>
                     <div class="color-options">
                         <div class="color-option">
                             <input type="radio" name="color" value="red" id="color-red" 
@@ -429,7 +558,23 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>😊 ระบุอารมณ์:</label>
+                    <label>
+                        😊 ระบุอารมณ์:
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon">ℹ️</span>
+                            <div class="tooltip-content">
+                                <strong>💭 แนะนำการระบุอารมณ์</strong>
+                                <p><strong>ไม่ต้องกังวล!</strong> คุณไม่จำเป็นต้องระบุอารมณ์ได้ถูกต้องและแม่นยำตั้งแต่ครั้งแรก</p>
+                                <p>📝 คุณสามารถ<strong>ระบุอารมณ์เบื้องต้น</strong>และ<strong>ย้อนกลับมาแก้ไขในภายหลัง</strong>ได้</p>
+                                <p>🎯 เครื่องมือที่ช่วยระบุอารมณ์:</p>
+                                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                                    <li><strong>Wheel of Emotions</strong> (วงล้ออารมณ์)</li>
+                                    <li>Feelings Chart</li>
+                                    <li>Mood Meter</li>
+                                </ul>
+                            </div>
+                        </span>
+                    </label>
                     <input type="text" name="emotion" 
                            value="{% if edit_mood %}{{ edit_mood.emotion }}{% endif %}"
                            placeholder="เช่น มีความสุข, เครียด, โกรธ, ผ่อนคลาย" required>
@@ -490,5 +635,40 @@
             {% endif %}
         </div>
     </div>
+    
+    <script>
+        // Tooltip สำหรับ Mobile (คลิกแทน Hover)
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipContainers = document.querySelectorAll('.tooltip-container');
+            
+            tooltipContainers.forEach(container => {
+                const icon = container.querySelector('.tooltip-icon');
+                
+                icon.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // ปิด tooltip อื่นๆ
+                    tooltipContainers.forEach(other => {
+                        if (other !== container) {
+                            other.classList.remove('active');
+                        }
+                    });
+                    
+                    // Toggle tooltip ปัจจุบัน
+                    container.classList.toggle('active');
+                });
+            });
+            
+            // ปิด tooltip เมื่อคลิกที่อื่น
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.tooltip-container')) {
+                    tooltipContainers.forEach(container => {
+                        container.classList.remove('active');
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
