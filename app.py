@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, make_response
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -6,12 +6,39 @@ import os
 from dotenv import load_dotenv
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import bcrypt
+from werkzeug.utils import secure_filename
+from collections import Counter
+import platform
+
+# ⚠️ Import pdfkit แบบปลอดภัย
+try:
+    import pdfkit
+    # ตรวจสอบว่าเป็น Windows หรือไม่
+    if platform.system() == 'Windows':
+        # ตั้งค่า path สำหรับ Windows
+        pdfkit_config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+    else:
+        # สำหรับ Linux/Mac/Render
+        pdfkit_config = pdfkit.configuration()
+    PDF_ENABLED = True
+except Exception as e:
+    print(f"⚠️ Warning: pdfkit not available. PDF export disabled. Error: {e}")
+    PDF_ENABLED = False
+    pdfkit_config = None
 
 # โหลดค่าจาก .env
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
+
+# ตั้งค่า Upload
+app.config['UPLOAD_FOLDER'] = 'static/uploads/profiles'
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # จำกัดขนาด 5MB
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# สร้างโฟลเดอร์ถ้ายังไม่มี
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ตั้งค่า Flask-Login
 login_manager = LoginManager()
@@ -44,6 +71,18 @@ def load_user(user_id):
     if user_data:
         return User(user_data)
     return None
+
+# Context Processor สำหรับส่งข้อมูล user ไปทุกหน้า
+@app.context_processor
+def inject_user_data():
+    if current_user.is_authenticated:
+        user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+        return {'user_full_data': user_data}
+    return {'user_full_data': None}
+
+# ฟังก์ชันตรวจสอบไฟล์
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # หน้าแรก - redirect ไปหน้า login
 @app.route('/')
@@ -99,6 +138,7 @@ def register():
             'username': username,
             'email': email,
             'password': hashed_password,
+            'theme': 'default',
             'created_at': datetime.now()
         }
         
@@ -199,8 +239,34 @@ def statistics():
         'เขียว': len([m for m in moods if m.get('color') == 'เขียว'])
     }
     
+    # รวม triggers ตามสี
+    color_triggers = {
+        'แดง': {},
+        'เหลือง': {},
+        'น้ำเงิน': {},
+        'เขียว': {}
+    }
+    
+    for mood in moods:
+        color = mood.get('color', '')
+        trigger = mood.get('trigger', 'ไม่ระบุ')
+        
+        if color in color_triggers:
+            if trigger in color_triggers[color]:
+                color_triggers[color][trigger] += 1
+            else:
+                color_triggers[color][trigger] = 1
+    
+    # จัดเรียง triggers ตามจำนวน (Top 5 ต่อสี)
+    for color in color_triggers:
+        sorted_triggers = sorted(
+            color_triggers[color].items(), 
+            key=lambda x: x[1], 
+            reverse=True
+        )[:5]
+        color_triggers[color] = dict(sorted_triggers)
+    
     # นับตามอารมณ์ (Top 10)
-    from collections import Counter
     emotions = [m.get('emotion', '') for m in moods if m.get('emotion')]
     emotion_stats = dict(Counter(emotions).most_common(10))
     
@@ -211,9 +277,60 @@ def statistics():
     return render_template('statistics.html', 
                          total_moods=total_moods,
                          color_stats=color_stats,
+                         color_triggers=color_triggers,
                          emotion_stats=emotion_stats,
                          trigger_stats=trigger_stats,
-                         active_page='statistics')
+                         active_page='statistics',
+                         pdf_enabled=PDF_ENABLED)
+
+# Export PDF
+@app.route('/export-pdf')
+@login_required
+def export_pdf():
+    if not PDF_ENABLED:
+        flash('⚠️ ฟีเจอร์ Export PDF ไม่พร้อมใช้งาน กรุณาติดตั้ง wkhtmltopdf', 'error')
+        return redirect(url_for('statistics'))
+    
+    try:
+        moods = list(moods_collection.find({'user_id': current_user.id}))
+        user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+        
+        # คำนวณสถิติ
+        total_moods = len(moods)
+        color_stats = {
+            'แดง': len([m for m in moods if m.get('color') == 'แดง']),
+            'เหลือง': len([m for m in moods if m.get('color') == 'เหลือง']),
+            'น้ำเงิน': len([m for m in moods if m.get('color') == 'น้ำเงิน']),
+            'เขียว': len([m for m in moods if m.get('color') == 'เขียว'])
+        }
+        
+        emotions = [m.get('emotion', '') for m in moods if m.get('emotion')]
+        emotion_stats = dict(Counter(emotions).most_common(10))
+        
+        triggers = [m.get('trigger', '') for m in moods if m.get('trigger')]
+        trigger_stats = dict(Counter(triggers).most_common(10))
+        
+        # Render HTML
+        html = render_template('pdf_template.html',
+                              username=user_data.get('username', ''),
+                              total_moods=total_moods,
+                              color_stats=color_stats,
+                              emotion_stats=emotion_stats,
+                              trigger_stats=trigger_stats,
+                              export_date=datetime.now().strftime('%d/%m/%Y %H:%M'))
+        
+        # แปลงเป็น PDF
+        pdf = pdfkit.from_string(html, False, configuration=pdfkit_config)
+        
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=mood_statistics_{current_user.username}.pdf'
+        
+        return response
+    except Exception as e:
+        print(f"PDF Export Error: {e}")
+        flash(f'❌ ไม่สามารถสร้าง PDF ได้: {str(e)}', 'error')
+        return redirect(url_for('statistics'))
 
 # หน้าตั้งค่าบัญชี
 @app.route('/settings', methods=['GET', 'POST'])
@@ -248,6 +365,64 @@ def settings():
                 }}
             )
             flash('อัพเดทข้อมูลส่วนตัวสำเร็จ!', 'success')
+            return redirect(url_for('settings'))
+        
+        elif action == 'upload_profile_picture':
+            if 'profile_picture' not in request.files:
+                flash('ไม่พบไฟล์รูปภาพ', 'error')
+                return redirect(url_for('settings'))
+            
+            file = request.files['profile_picture']
+            
+            if file.filename == '':
+                flash('ไม่ได้เลือกไฟล์', 'error')
+                return redirect(url_for('settings'))
+            
+            if file and allowed_file(file.filename):
+                # ลบรูปเก่า (ถ้ามี)
+                user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+                old_picture = user_data.get('profile_picture')
+                if old_picture:
+                    old_path = os.path.join(app.config['UPLOAD_FOLDER'], old_picture)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                # บันทึกรูปใหม่
+                filename = secure_filename(f"{current_user.id}_{file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                
+                # อัพเดท database
+                users_collection.update_one(
+                    {'_id': ObjectId(current_user.id)},
+                    {'$set': {'profile_picture': filename}}
+                )
+                
+                flash('อัพโหลดรูปโปรไฟล์สำเร็จ!', 'success')
+                return redirect(url_for('settings'))
+            else:
+                flash('ประเภทไฟล์ไม่ถูกต้อง (รองรับเฉพาะ PNG, JPG, JPEG, GIF)', 'error')
+                return redirect(url_for('settings'))
+        
+        elif action == 'delete_profile_picture':
+            user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+            old_picture = user_data.get('profile_picture')
+            
+            if old_picture:
+                # ลบไฟล์
+                old_path = os.path.join(app.config['UPLOAD_FOLDER'], old_picture)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+                
+                # อัพเดท database
+                users_collection.update_one(
+                    {'_id': ObjectId(current_user.id)},
+                    {'$unset': {'profile_picture': ''}}
+                )
+                flash('ลบรูปโปรไฟล์สำเร็จ!', 'success')
+            else:
+                flash('ไม่มีรูปโปรไฟล์ให้ลบ', 'error')
+            
             return redirect(url_for('settings'))
         
         elif action == 'change_password':

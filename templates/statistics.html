@@ -45,9 +45,34 @@
         margin-bottom: 30px;
     }
     
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
     .chart-section h3 {
         margin-bottom: 20px;
         color: #333;
+    }
+    
+    .btn-export {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: transform 0.2s;
+    }
+    
+    .btn-export:hover {
+        transform: translateY(-2px);
     }
     
     .chart-container {
@@ -78,6 +103,12 @@
     @media (max-width: 768px) {
         .chart-container {
             height: 300px;
+        }
+        
+        .chart-header {
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
         }
     }
 </style>
@@ -118,9 +149,14 @@
 </div>
 
 {% if total_moods > 0 %}
-<!-- กราฟแบ่งตามสี -->
+<!-- กราฟแท่งตามสี -->
 <div class="chart-section">
-    <h3>🎨 สัดส่วนตามสีความรู้สึก</h3>
+    <div class="chart-header">
+        <h3>🎨 สัดส่วนตามสีความรู้สึก</h3>
+        <a href="{{ url_for('export_pdf') }}" class="btn-export">
+            📥 ดาวน์โหลด PDF
+        </a>
+    </div>
     <div class="chart-container">
         <canvas id="colorChart"></canvas>
     </div>
@@ -157,10 +193,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
 {% if total_moods > 0 %}
-    // กราฟสี
+    // ข้อมูล Triggers ตามสี
+    const colorTriggersData = {{ color_triggers|tojson }};
+    
+    // กราฟแท่งแนวตั้ง (เปลี่ยนจาก Doughnut)
     const colorData = {
         labels: ['แดง', 'เหลือง', 'น้ำเงิน', 'เขียว'],
         datasets: [{
+            label: 'จำนวนบันทึก',
             data: [
                 {{ color_stats.get('แดง', 0) }},
                 {{ color_stats.get('เหลือง', 0) }},
@@ -168,41 +208,103 @@
                 {{ color_stats.get('เขียว', 0) }}
             ],
             backgroundColor: [
+                'rgba(255, 107, 107, 0.8)',
+                'rgba(255, 217, 61, 0.8)',
+                'rgba(107, 207, 255, 0.8)',
+                'rgba(81, 207, 102, 0.8)'
+            ],
+            borderColor: [
                 '#ff6b6b',
                 '#ffd93d',
                 '#6bcfff',
                 '#51cf66'
             ],
             borderWidth: 2,
-            borderColor: '#fff'
+            borderRadius: 8,
+            barThickness: 80
         }]
     };
     
     const colorChart = new Chart(document.getElementById('colorChart'), {
-        type: 'doughnut',
+        type: 'bar',
         data: colorData,
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
                         font: {
                             size: 14
                         }
+                    },
+                    title: {
+                        display: true,
+                        text: 'จำนวน (ครั้ง)',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
                     }
                 },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((context.parsed / total) * 100).toFixed(1);
-                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                x: {
+                    ticks: {
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'สีแทนความรู้สึก',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
                         }
                     }
                 }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        // แสดง Triggers ตอน Hover
+                        afterLabel: function(context) {
+                            const colorName = context.label;
+                            const triggers = colorTriggersData[colorName];
+                            
+                            if (!triggers || Object.keys(triggers).length === 0) {
+                                return '\n💥 ไม่มีสิ่งกระตุ้น';
+                            }
+                            
+                            let triggerText = '\n\n💥 สิ่งกระตุ้นที่พบบ่อย:';
+                            for (const [trigger, count] of Object.entries(triggers)) {
+                                triggerText += `\n  • ${trigger} (${count} ครั้ง)`;
+                            }
+                            return triggerText;
+                        }
+                    },
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleFont: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 14,
+                        family: 'monospace'
+                    },
+                    padding: 15,
+                    displayColors: false,
+                    cornerRadius: 8
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
             }
         }
     });
@@ -213,9 +315,20 @@
         datasets: [{
             label: 'จำนวนครั้ง',
             data: {{ emotion_stats.values()|list|tojson }},
-            backgroundColor: 'rgba(102, 126, 234, 0.6)',
-            borderColor: 'rgba(102, 126, 234, 1)',
-            borderWidth: 2
+            backgroundColor: [
+                'rgba(102, 126, 234, 0.8)',
+                'rgba(118, 75, 162, 0.8)',
+                'rgba(255, 107, 107, 0.8)',
+                'rgba(255, 217, 61, 0.8)',
+                'rgba(81, 207, 102, 0.8)',
+                'rgba(107, 207, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)',
+                'rgba(201, 203, 207, 0.8)',
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
         }]
     };
     
@@ -234,6 +347,15 @@
                             size: 12
                         }
                     }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed} ครั้ง (${percentage}%)`;
+                        }
+                    }
                 }
             }
         }
@@ -245,9 +367,20 @@
         datasets: [{
             label: 'จำนวนครั้ง',
             data: {{ trigger_stats.values()|list|tojson }},
-            backgroundColor: 'rgba(81, 207, 102, 0.6)',
-            borderColor: 'rgba(81, 207, 102, 1)',
-            borderWidth: 2
+            backgroundColor: [
+                'rgba(81, 207, 102, 0.8)',
+                'rgba(107, 207, 255, 0.8)',
+                'rgba(255, 217, 61, 0.8)',
+                'rgba(255, 107, 107, 0.8)',
+                'rgba(102, 126, 234, 0.8)',
+                'rgba(118, 75, 162, 0.8)',
+                'rgba(255, 159, 64, 0.8)',
+                'rgba(201, 203, 207, 0.8)',
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
         }]
     };
     
@@ -264,6 +397,15 @@
                         padding: 15,
                         font: {
                             size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed} ครั้ง (${percentage}%)`;
                         }
                     }
                 }

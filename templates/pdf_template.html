@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถิติความรู้สึก - {{ username }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Sarabun', 'Arial', sans-serif;
+            padding: 40px;
+            background: white;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .user-info h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .user-info p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .stat-box.red {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        }
+        
+        .stat-box.yellow {
+            background: linear-gradient(135deg, #ffd93d 0%, #f6c23e 100%);
+            color: #333;
+        }
+        
+        .stat-box.blue {
+            background: linear-gradient(135deg, #6bcfff 0%, #4facfe 100%);
+        }
+        
+        .stat-box.green {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            font-size: 24px;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .color-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .color-item {
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .color-item.red {
+            background: rgba(255, 107, 107, 0.2);
+            border: 2px solid #ff6b6b;
+        }
+        
+        .color-item.yellow {
+            background: rgba(255, 217, 61, 0.2);
+            border: 2px solid #ffd93d;
+        }
+        
+        .color-item.blue {
+            background: rgba(107, 207, 255, 0.2);
+            border: 2px solid #6bcfff;
+        }
+        
+        .color-item.green {
+            background: rgba(81, 207, 102, 0.2);
+            border: 2px solid #51cf66;
+        }
+        
+        .color-item h3 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .color-item p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .list-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .list-section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-item-label {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .list-item-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .footer p {
+            margin-bottom: 5px;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        @media print {
+            body {
+                padding: 20px;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>📔 รายงานสถิติความรู้สึก</h1>
+        <p>Mood Tracker Statistics Report</p>
+    </div>
+    
+    <!-- User Info -->
+    <div class="user-info">
+        <h2>ผู้ใช้งาน: {{ username }}</h2>
+        <p>📅 วันที่ออกรายงาน: {{ export_date }}</p>
+    </div>
+    
+    <!-- Stats Overview -->
+    <div class="stats-overview">
+        <div class="stat-box">
+            <div class="stat-number">{{ total_moods }}</div>
+            <div class="stat-label">บันทึกทั้งหมด</div>
+        </div>
+        
+        <div class="stat-box red">
+            <div class="stat-number">{{ color_stats.get('แดง', 0) }}</div>
+            <div class="stat-label">สีแดง</div>
+        </div>
+        
+        <div class="stat-box yellow">
+            <div class="stat-number">{{ color_stats.get('เหลือง', 0) }}</div>
+            <div class="stat-label">สีเหลือง</div>
+        </div>
+        
+        <div class="stat-box blue">
+            <div class="stat-number">{{ color_stats.get('น้ำเงิน', 0) }}</div>
+            <div class="stat-label">สีน้ำเงิน</div>
+        </div>
+        
+        <div class="stat-box green">
+            <div class="stat-number">{{ color_stats.get('เขียว', 0) }}</div>
+            <div class="stat-label">สีเขียว</div>
+        </div>
+    </div>
+    
+    {% if total_moods > 0 %}
+    <!-- Color Statistics -->
+    <div class="section">
+        <h2>🎨 สัดส่วนตามสีความรู้สึก</h2>
+        <div class="color-stats">
+            <div class="color-item red">
+                <h3>🔴 แดง</h3>
+                <p>{{ color_stats.get('แดง', 0) }} ครั้ง</p>
+                <p>{{ "%.1f"|format((color_stats.get('แดง', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
+                <p style="font-size: 12px; margin-top: 5px;">พลังงานสูง + ไม่พอใจ</p>
+            </div>
+            
+            <div class="color-item yellow">
+                <h3>🟡 เหลือง</h3>
+                <p>{{ color_stats.get('เหลือง', 0) }} ครั้ง</p>
+                <p>{{ "%.1f"|format((color_stats.get('เหลือง', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
+                <p style="font-size: 12px; margin-top: 5px;">พลังงานสูง + พอใจ</p>
+            </div>
+            
+            <div class="color-item blue">
+                <h3>🔵 น้ำเงิน</h3>
+                <p>{{ color_stats.get('น้ำเงิน', 0) }} ครั้ง</p>
+                <p>{{ "%.1f"|format((color_stats.get('น้ำเงิน', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
+                <p style="font-size: 12px; margin-top: 5px;">พลังงานต่ำ + ไม่พอใจ</p>
+            </div>
+            
+            <div class="color-item green">
+                <h3>🟢 เขียว</h3>
+                <p>{{ color_stats.get('เขียว', 0) }} ครั้ง</p>
+                <p>{{ "%.1f"|format((color_stats.get('เขียว', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
+                <p style="font-size: 12px; margin-top: 5px;">พลังงานต่ำ + พอใจ</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Emotion Statistics -->
+    <div class="section">
+        <h2>😊 อารมณ์ที่พบบ่อย (Top 10)</h2>
+        <div class="list-section">
+            {% if emotion_stats %}
+                {% for emotion, count in emotion_stats.items() %}
+                <div class="list-item">
+                    <span class="list-item-label">{{ loop.index }}. {{ emotion }}</span>
+                    <span class="list-item-value">{{ count }} ครั้ง</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-data">ไม่มีข้อมูลอารมณ์</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Trigger Statistics -->
+    <div class="section">
+        <h2>💥 สิ่งกระตุ้นที่พบบ่อย (Top 10)</h2>
+        <div class="list-section">
+            {% if trigger_stats %}
+                {% for trigger, count in trigger_stats.items() %}
+                <div class="list-item">
+                    <span class="list-item-label">{{ loop.index }}. {{ trigger }}</span>
+                    <span class="list-item-value">{{ count }} ครั้ง</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-data">ไม่มีข้อมูลสิ่งกระตุ้น</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% else %}
+    <div class="section">
+        <div class="no-data">
+            <h2>ยังไม่มีข้อมูลสถิติ</h2>
+            <p>เริ่มบันทึกความรู้สึกเพื่อดูสถิติของคุณ</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p>📔 Mood Tracker - บันทึกความรู้สึกของคุณ</p>
+        <p>© 2024 Mood Tracker. All rights reserved.</p>
+        <p>สร้างโดยระบบอัตโนมัติ</p>
+    </div>
+</body>
+</html>
