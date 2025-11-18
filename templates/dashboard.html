@@ -65,6 +65,24 @@
         border-color: #667eea;
     }
     
+    /* Style สำหรับ Select */
+    select {
+        background-color: white;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 20px;
+        padding-right: 40px;
+    }
+    
+    select:disabled {
+        background-color: #f0f0f0;
+        cursor: not-allowed;
+        color: #999;
+    }
+    
     textarea {
         resize: vertical;
         min-height: 100px;
@@ -273,6 +291,21 @@
         border-radius: 50%;
     }
     
+    /* Info box สำหรับอธิบายวิธีเพิ่มตัวเลือก */
+    .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #667eea;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+    
+    .info-box p {
+        color: #333;
+        font-size: 14px;
+        margin: 5px 0;
+    }
+    
     @media (max-width: 768px) {
         .color-options {
             grid-template-columns: repeat(2, 1fr);
@@ -291,15 +324,15 @@
         {% endif %}
     </div>
     
-    <form action="{% if edit_mood %}/update/{{ edit_mood._id }}{% else %}/add{% endif %}" method="POST">
+    <form action="{% if edit_mood %}/update/{{ edit_mood._id }}{% else %}/add{% endif %}" method="POST" id="moodForm">
         <div class="form-group">
             <label>📅 วันที่:</label>
-            <input type="date" name="date" value="{% if edit_mood %}{{ edit_mood.date }}{% endif %}" required>
+            <input type="date" name="date" id="dateInput" value="{% if edit_mood %}{{ edit_mood.date }}{% endif %}" required>
         </div>
         
         <div class="form-group">
             <label>🕐 เวลา:</label>
-            <input type="time" name="time" value="{% if edit_mood %}{{ edit_mood.time }}{% endif %}" required>
+            <input type="time" name="time" id="timeInput" value="{% if edit_mood %}{{ edit_mood.time }}{% endif %}" required>
         </div>
         
         <div class="form-group">
@@ -333,27 +366,30 @@
             </label>
             <div class="color-options">
                 <div class="color-option">
-                    <input type="radio" name="color" value="แดง" id="color-red" {% if edit_mood and edit_mood.color == 'แดง' %}checked{% elif not edit_mood %}required{% endif %}>
+                    <input type="radio" name="color" value="แดง" id="color-red" 
+                           {% if edit_mood and edit_mood.color == 'แดง' %}checked{% elif not edit_mood %}required{% endif %}
+                           onchange="updateEmotionOptions('แดง')">
                     <label for="color-red" class="color-label color-red">แดง</label>
                 </div>
                 <div class="color-option">
-                    <input type="radio" name="color" value="เหลือง" id="color-yellow" {% if edit_mood and edit_mood.color == 'เหลือง' %}checked{% endif %}>
+                    <input type="radio" name="color" value="เหลือง" id="color-yellow" 
+                           {% if edit_mood and edit_mood.color == 'เหลือง' %}checked{% endif %}
+                           onchange="updateEmotionOptions('เหลือง')">
                     <label for="color-yellow" class="color-label color-yellow">เหลือง</label>
                 </div>
                 <div class="color-option">
-                    <input type="radio" name="color" value="น้ำเงิน" id="color-blue" {% if edit_mood and edit_mood.color == 'น้ำเงิน' %}checked{% endif %}>
+                    <input type="radio" name="color" value="น้ำเงิน" id="color-blue" 
+                           {% if edit_mood and edit_mood.color == 'น้ำเงิน' %}checked{% endif %}
+                           onchange="updateEmotionOptions('น้ำเงิน')">
                     <label for="color-blue" class="color-label color-blue">น้ำเงิน</label>
                 </div>
                 <div class="color-option">
-                    <input type="radio" name="color" value="เขียว" id="color-green" {% if edit_mood and edit_mood.color == 'เขียว' %}checked{% endif %}>
+                    <input type="radio" name="color" value="เขียว" id="color-green" 
+                           {% if edit_mood and edit_mood.color == 'เขียว' %}checked{% endif %}
+                           onchange="updateEmotionOptions('เขียว')">
                     <label for="color-green" class="color-label color-green">เขียว</label>
                 </div>
             </div>
-        </div>
-        
-        <div class="form-group">
-            <label>💥 สิ่งกระตุ้น:</label>
-            <input type="text" name="trigger" value="{% if edit_mood %}{{ edit_mood.trigger }}{% endif %}" placeholder="เช่น การทำงาน, ครอบครัว, เพื่อน" required>
         </div>
         
         <div class="form-group">
@@ -362,14 +398,22 @@
                 <span class="tooltip-container">
                     <span class="tooltip-icon">ℹ️</span>
                     <div class="tooltip-content">
-                        <strong>💭 แนะนำการระบุอารมณ์</strong>
-                        <p style="margin: 10px 0;"><strong>ไม่ต้องกังวล!</strong> คุณไม่จำเป็นต้องระบุอารมณ์ได้แม่นยำตั้งแต่ครั้งแรก</p>
-                        <p style="margin: 10px 0;">📝 สามารถย้อนกลับมาแก้ไขได้</p>
-                        <p style="margin: 10px 0;">🎯 เครื่องมือแนะนำ: Wheel of Emotions</p>
+                        <strong>💭 วิธีใช้งาน</strong>
+                        <p style="margin: 10px 0;">1. เลือกสีที่แทนความรู้สึกก่อน</p>
+                        <p style="margin: 10px 0;">2. เมนูอารมณ์จะแสดงตัวเลือกที่เหมาะกับสีนั้น</p>
+                        <p style="margin: 10px 0;">3. เลือกอารมณ์ที่ใกล้เคียงที่สุด</p>
+                        <!--<p style="margin: 10px 0;"><strong>💡 เคล็ดลับ:</strong> ถ้าไม่มีอารมณ์ที่ต้องการ สามารถเพิ่มเองได้!</p>-->
                     </div>
                 </span>
             </label>
-            <input type="text" name="emotion" value="{% if edit_mood %}{{ edit_mood.emotion }}{% endif %}" placeholder="เช่น มีความสุข, เครียด, โกรธ" required>
+            <select name="emotion" id="emotionSelect" required disabled>
+                <option value="">-- กรุณาเลือกสีก่อน --</option>
+            </select>
+        </div>     
+        
+        <div class="form-group">
+            <label>💥 สิ่งกระตุ้น:</label>
+            <input type="text" name="trigger" value="{% if edit_mood %}{{ edit_mood.trigger }}{% endif %}" placeholder="เช่น การทำงาน, ครอบครัว, เพื่อน" required>
         </div>
         
         <div class="form-group">
@@ -430,4 +474,276 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+// ============================================================
+// 📚 ส่วนที่ 1: กำหนดตัวเลือกอารมณ์ตามสี (เพิ่มลบได้ที่นี่!)
+// ============================================================
+
+// ============================================================
+// 📚 รายการอารมณ์แนะนำ (Copy ไปใช้ได้เลย!)
+// ============================================================
+
+const emotionsByColor = {
+    // 🔴 สีแดง: พลังงานสูง + ไม่พอใจ (High Energy + Unpleasant)
+    'แดง': [
+        // ความโกรธ (Anger)
+        'โกรธ',
+        'โกรธมาก',
+        'โกรธจัด',
+        'ขุ่นเคือง',
+        'ฉุนเฉียว',
+        'หงุดหงิด',
+        'รำคาญ',
+        'คับข้องใจ',
+        
+        // ความกลัว (Fear)
+        'กลัว',
+        'ตกใจ',
+        'หวาดกลัว',
+        'วิตกกังวล',
+        'กระวนกระวาย',
+        'หวาดระแวง',
+        
+        // ความเครียด (Stress)
+        'เครียด',
+        'เครียดมาก',
+        'กดดัน',
+        'ตึงเครียด',
+        'วุ่นวาย',
+        'ล้น',
+        
+        // อื่นๆ
+        'ตื่นเต้น (เชิงลบ)',
+        'กระสับกระส่าย',
+        'ไม่พอใจ',
+        'ผิดหวัง',
+        
+        // 👉 เพิ่มเองได้ที่นี่!
+    ],
+    
+    // 🟡 สีเหลือง: พลังงานสูง + พอใจ (High Energy + Pleasant)
+    'เหลือง': [
+        // ความสุข (Happiness)
+        'มีความสุข',
+        'ดีใจ',
+        'ดีใจมาก',
+        'ปลาบปลื้ม',
+        'เบิกบาน',
+        'สุขใจ',
+        
+        // ความตื่นเต้น (Excitement)
+        'ตื่นเต้น',
+        'ตื่นตาตื่นใจ',
+        'ฮือฮา',
+        'เฮฮา',
+        'สนุกสนาน',
+        
+        // พลังงาน (Energy)
+        'มีพลัง',
+        'กระปรี้กระเปร่า',
+        'สดชื่น',
+        'กระตือรือร้น',
+        'กระฉับกระเฉง',
+        'ฮึกเหิม',
+        
+        // ความรัก (Love)
+        'รักใคร่',
+        'หลงรัก',
+        'ชื่นชม',
+        'ประทับใจ',
+        
+        // ความภูมิใจ (Pride)
+        'ภูมิใจ',
+        'มั่นใจ',
+        'เชื่อมั่น',
+        'พึงพอใจ',
+        
+        // 👉 เพิ่มเองได้ที่นี่!
+    ],
+    
+    // 🔵 สีน้ำเงิน: พลังงานต่ำ + ไม่พอใจ (Low Energy + Unpleasant)
+    'น้ำเงิน': [
+        // ความเศร้า (Sadness)
+        'เศร้า',
+        'เศร้ามาก',
+        'เสียใจ',
+        'หดหู่',
+        'ซึมเศร้า',
+        'โศกเศร้า',
+        
+        // ความเหงา (Loneliness)
+        'เหงา',
+        'โดดเดี่ยว',
+        'อ้างว้าง',
+        'โดดเดี่ยว',
+        
+        // ความท้อแท้ (Hopelessness)
+        'ท้อแท้',
+        'สิ้นหวัง',
+        'หมดหวัง',
+        'ไร้พลัง',
+        'ทรุดโทรม',
+        
+        // ความเบื่อ (Boredom)
+        'เบื่อ',
+        'เบื่อหน่าย',
+        'เซ็ง',
+        'เฉยเมย',
+        'ไม่สนใจ',
+        
+        // อื่นๆ
+        'ว่างเปล่า',
+        'เหนื่อยหน่าย',
+        'อ่อนล้า',
+        'ไม่มีแรง',
+        'หมดไฟ',
+        
+        // 👉 เพิ่มเองได้ที่นี่!
+    ],
+    
+    // 🟢 สีเขียว: พลังงานต่ำ + พอใจ (Low Energy + Pleasant)
+    'เขียว': [
+        // ความสงบ (Calm)
+        'สงบ',
+        'สงบนิ่ง',
+        'สงบสุข',
+        'สันติ',
+        'สุขุม',
+        'เยือกเย็น',
+        
+        // ความผ่อนคลาย (Relaxation)
+        'ผ่อนคลาย',
+        'สบาย',
+        'สบายใจ',
+        'ชิลล์',
+        'สะดวกสบาย',
+        
+        // ความพึงพอใจ (Satisfaction)
+        'พอใจ',
+        'พึงพอใจ',
+        'รู้สึกดี',
+        'โอเค',
+        'ราบรื่น',
+        
+        // ความอบอุ่น (Warmth)
+        'อบอุ่น',
+        'อบอุ่นใจ',
+        'ปลอดภัย',
+        'มั่นคง',
+        
+        // ความขอบคุณ (Gratitude)
+        'ขอบคุณ',
+        'ซาบซึ้ง',
+        'รู้คุณ',
+        'สำนึกบุญคุณ',
+        
+        // อื่นๆ
+        'เบา',
+        'เบาใจ',
+        'สดชื่น',
+        'แจ่มใส',
+        
+        // 👉 เพิ่มเองได้ที่นี่!
+    ]
+};
+
+// ============================================================
+// 💡 เคล็ดลับการเพิ่มอารมณ์:
+// ============================================================
+// 1. คิดว่าอารมณ์นั้นมีพลังงานสูงหรือต่ำ?
+// 2. คิดว่าอารมณ์นั้นเป็นบวก(พอใจ) หรือลบ(ไม่พอใจ)?
+// 3. ใส่ในสีที่เหมาะสม:
+//    - พลังงานสูง + ลบ = แดง
+//    - พลังงานสูง + บวก = เหลือง
+//    - พลังงานต่ำ + ลบ = น้ำเงิน
+//    - พลังงานต่ำ + บวก = เขียว
+// ============================================================
+
+// ============================================================
+// 📚 ส่วนที่ 2: ฟังก์ชันอัพเดทตัวเลือกอารมณ์
+// ============================================================
+
+function updateEmotionOptions(color) {
+    const emotionSelect = document.getElementById('emotionSelect');
+    const emotions = emotionsByColor[color] || [];
+    
+    // ล้างตัวเลือกเก่า
+    emotionSelect.innerHTML = '<option value="">-- กรุณาเลือกอารมณ์ --</option>';
+    
+    // เพิ่มตัวเลือกใหม่
+    emotions.forEach(emotion => {
+        const option = document.createElement('option');
+        option.value = emotion;
+        option.textContent = emotion;
+        emotionSelect.appendChild(option);
+    });
+    
+    // เปิดการใช้งาน dropdown
+    emotionSelect.disabled = false;
+    
+    // ถ้าเป็นโหมดแก้ไข ให้เลือกอารมณ์เดิม
+    {% if edit_mood %}
+    const savedEmotion = "{{ edit_mood.emotion }}";
+    if (savedEmotion && emotions.includes(savedEmotion)) {
+        emotionSelect.value = savedEmotion;
+    }
+    {% endif %}
+}
+
+// ============================================================
+// 📚 ส่วนที่ 3: เริ่มต้นเมื่อโหลดหน้า
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ตั้งค่าวันที่และเวลาเริ่มต้น (ถ้าเป็นการเพิ่มใหม่)
+    {% if not edit_mood %}
+    const now = new Date();
+    const dateInput = document.getElementById('dateInput');
+    const timeInput = document.getElementById('timeInput');
+    
+    // Format: YYYY-MM-DD
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    dateInput.value = `${year}-${month}-${day}`;
+    
+    // Format: HH:MM
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    timeInput.value = `${hours}:${minutes}`;
+    {% endif %}
+    
+    // ถ้าเป็นโหมดแก้ไข ให้อัพเดทตัวเลือกอารมณ์ตามสีที่เลือกไว้
+    {% if edit_mood %}
+    const selectedColor = document.querySelector('input[name="color"]:checked');
+    if (selectedColor) {
+        updateEmotionOptions(selectedColor.value);
+    }
+    {% endif %}
+});
+
+// ============================================================
+// 📚 ส่วนที่ 4: Validation ก่อน Submit
+// ============================================================
+
+document.getElementById('moodForm').addEventListener('submit', function(e) {
+    const emotionSelect = document.getElementById('emotionSelect');
+    const selectedColor = document.querySelector('input[name="color"]:checked');
+    
+    if (!selectedColor) {
+        e.preventDefault();
+        alert('❌ กรุณาเลือกสีที่แทนความรู้สึก');
+        return false;
+    }
+    
+    if (!emotionSelect.value) {
+        e.preventDefault();
+        alert('❌ กรุณาเลือกอารมณ์');
+        return false;
+    }
+    
+    return true;
+});
+</script>
 {% endblock %}
