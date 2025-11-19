@@ -310,6 +310,189 @@ def export_pdf():
         triggers = [m.get('trigger', '') for m in moods if m.get('trigger')]
         trigger_stats = dict(Counter(triggers).most_common(10))
         
+        # Render HTML (เฉพาะสถิติ)
+        html = render_template('pdf_template.html',
+                              username=user_data.get('username', ''),
+                              total_moods=total_moods,
+                              color_stats=color_stats,
+                              emotion_stats=emotion_stats,
+                              trigger_stats=trigger_stats,
+                              export_date=datetime.now().strftime('%d/%m/%Y %H:%M'),
+                              include_all_entries=False,  # ไม่รวมรายการทั้งหมด
+                              moods=None)
+        
+        # ตั้งค่า wkhtmltopdf สำหรับภาษาไทย
+        options = {
+            'encoding': 'UTF-8',
+            'page-size': 'A4',
+            'margin-top': '15mm',
+            'margin-right': '15mm',
+            'margin-bottom': '15mm',
+            'margin-left': '15mm',
+            'no-outline': None,
+            'enable-local-file-access': None
+        }
+        
+        # แปลงเป็น PDF
+        pdf = pdfkit.from_string(html, False, configuration=pdfkit_config, options=options)
+        
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=mood_statistics_{current_user.username}.pdf'
+        
+        return response
+    except Exception as e:
+        print(f"PDF Export Error: {e}")
+        flash(f'❌ ไม่สามารถสร้าง PDF ได้: {str(e)}', 'error')
+        return redirect(url_for('statistics'))
+
+# Export PDF รายการทั้งหมด (ใหม่!)
+@app.route('/export-pdf-full')
+@login_required
+def export_pdf_full():
+    if not PDF_ENABLED:
+        flash('⚠️ ฟีเจอร์ Export PDF ไม่พร้อมใช้งาน กรุณาติดตั้ง wkhtmltopdf', 'error')
+        return redirect(url_for('statistics'))
+    
+    try:
+        moods = list(moods_collection.find({'user_id': current_user.id}).sort('created_at', -1))
+        user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+        
+        # คำนวณสถิติ
+        total_moods = len(moods)
+        color_stats = {
+            'แดง': len([m for m in moods if m.get('color') == 'แดง']),
+            'เหลือง': len([m for m in moods if m.get('color') == 'เหลือง']),
+            'น้ำเงิน': len([m for m in moods if m.get('color') == 'น้ำเงิน']),
+            'เขียว': len([m for m in moods if m.get('color') == 'เขียว'])
+        }
+        
+        emotions = [m.get('emotion', '') for m in moods if m.get('emotion')]
+        emotion_stats = dict(Counter(emotions).most_common(10))
+        
+        triggers = [m.get('trigger', '') for m in moods if m.get('trigger')]
+        trigger_stats = dict(Counter(triggers).most_common(10))
+        
+        # Render HTML (รวมรายการทั้งหมด)
+        html = render_template('pdf_template.html',
+                              username=user_data.get('username', ''),
+                              total_moods=total_moods,
+                              color_stats=color_stats,
+                              emotion_stats=emotion_stats,
+                              trigger_stats=trigger_stats,
+                              export_date=datetime.now().strftime('%d/%m/%Y %H:%M'),
+                              include_all_entries=True,  # รวมรายการทั้งหมด
+                              moods=moods)
+        
+        # ตั้งค่า wkhtmltopdf สำหรับภาษาไทย
+        options = {
+            'encoding': 'UTF-8',
+            'page-size': 'A4',
+            'margin-top': '15mm',
+            'margin-right': '15mm',
+            'margin-bottom': '15mm',
+            'margin-left': '15mm',
+            'no-outline': None,
+            'enable-local-file-access': None
+        }
+        
+        # แปลงเป็น PDF
+        pdf = pdfkit.from_string(html, False, configuration=pdfkit_config, options=options)
+        
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=mood_full_report_{current_user.username}.pdf'
+        
+        return response
+    except Exception as e:
+        print(f"PDF Export Error: {e}")
+        flash(f'❌ ไม่สามารถสร้าง PDF ได้: {str(e)}', 'error')
+        return redirect(url_for('statistics'))
+    
+# Export PDF แบบกรอง (ใหม่!)
+@app.route('/export-pdf-filtered')
+@login_required
+def export_pdf_filtered():
+    if not PDF_ENABLED:
+        flash('⚠️ ฟีเจอร์ Export PDF ไม่พร้อมใช้งาน กรุณาติดตั้ง wkhtmltopdf', 'error')
+        return redirect(url_for('statistics'))
+    
+    try:
+        # รับพารามิเตอร์จาก Query String
+        selected_colors = request.args.getlist('colors')  # รับหลายค่า
+        start_date = request.args.get('start_date', None)
+        end_date = request.args.get('end_date', None)
+        emotion_filter = request.args.get('emotion', None)
+        sort_order = request.args.get('sort_order', 'desc')  # desc หรือ asc
+        limit = request.args.get('limit', '0')
+        
+        # สร้าง Query สำหรับ MongoDB
+        query = {'user_id': current_user.id}
+        
+        # กรองตามสี
+        if selected_colors:
+            query['color'] = {'$in': selected_colors}
+        
+        # กรองตามช่วงเวลา
+        date_query = {}
+        if start_date:
+            date_query['$gte'] = start_date
+        if end_date:
+            date_query['$lte'] = end_date
+        if date_query:
+            query['date'] = date_query
+        
+        # กรองตามอารมณ์
+        if emotion_filter:
+            query['emotion'] = emotion_filter
+        
+        # ดึงข้อมูล
+        sort_direction = -1 if sort_order == 'desc' else 1
+        moods_query = moods_collection.find(query).sort('created_at', sort_direction)
+        
+        # จำกัดจำนวน
+        if limit and limit != '0':
+            moods_query = moods_query.limit(int(limit))
+        
+        moods = list(moods_query)
+        user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+        
+        # คำนวณสถิติจากข้อมูลที่กรองแล้ว
+        total_moods = len(moods)
+        
+        if total_moods == 0:
+            flash('❌ ไม่พบข้อมูลตามเงื่อนไขที่กรอง กรุณาเปลี่ยนตัวกรอง', 'error')
+            return redirect(url_for('statistics'))
+        
+        color_stats = {
+            'แดง': len([m for m in moods if m.get('color') == 'แดง']),
+            'เหลือง': len([m for m in moods if m.get('color') == 'เหลือง']),
+            'น้ำเงิน': len([m for m in moods if m.get('color') == 'น้ำเงิน']),
+            'เขียว': len([m for m in moods if m.get('color') == 'เขียว'])
+        }
+        
+        emotions = [m.get('emotion', '') for m in moods if m.get('emotion')]
+        emotion_stats = dict(Counter(emotions).most_common(10))
+        
+        triggers = [m.get('trigger', '') for m in moods if m.get('trigger')]
+        trigger_stats = dict(Counter(triggers).most_common(10))
+        
+        # สร้างข้อความสรุปตัวกรอง
+        filter_summary = []
+        if selected_colors:
+            filter_summary.append(f"สี: {', '.join(selected_colors)}")
+        if start_date and end_date:
+            filter_summary.append(f"ช่วงเวลา: {start_date} ถึง {end_date}")
+        elif start_date:
+            filter_summary.append(f"ตั้งแต่: {start_date}")
+        elif end_date:
+            filter_summary.append(f"จนถึง: {end_date}")
+        if emotion_filter:
+            filter_summary.append(f"อารมณ์: {emotion_filter}")
+        filter_summary.append(f"เรียงลำดับ: {'ใหม่สุดก่อน' if sort_order == 'desc' else 'เก่าสุดก่อน'}")
+        if limit and limit != '0':
+            filter_summary.append(f"จำนวน: {limit} รายการ")
+        
         # Render HTML
         html = render_template('pdf_template.html',
                               username=user_data.get('username', ''),
@@ -317,14 +500,29 @@ def export_pdf():
                               color_stats=color_stats,
                               emotion_stats=emotion_stats,
                               trigger_stats=trigger_stats,
-                              export_date=datetime.now().strftime('%d/%m/%Y %H:%M'))
+                              export_date=datetime.now().strftime('%d/%m/%Y %H:%M'),
+                              include_all_entries=True,
+                              moods=moods,
+                              filter_summary=' | '.join(filter_summary))
+        
+        # ตั้งค่า wkhtmltopdf สำหรับภาษาไทย
+        options = {
+            'encoding': 'UTF-8',
+            'page-size': 'A4',
+            'margin-top': '15mm',
+            'margin-right': '15mm',
+            'margin-bottom': '15mm',
+            'margin-left': '15mm',
+            'no-outline': None,
+            'enable-local-file-access': None
+        }
         
         # แปลงเป็น PDF
-        pdf = pdfkit.from_string(html, False, configuration=pdfkit_config)
+        pdf = pdfkit.from_string(html, False, configuration=pdfkit_config, options=options)
         
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'attachment; filename=mood_statistics_{current_user.username}.pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=mood_filtered_{current_user.username}.pdf'
         
         return response
     except Exception as e:

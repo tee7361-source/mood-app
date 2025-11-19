@@ -5,34 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สถิติความรู้สึก - {{ username }}</title>
     <style>
+        /* ใช้ฟอนต์จาก Google Fonts ที่รองรับภาษาไทย */
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif;
         }
         
         body {
-            font-family: 'Sarabun', 'Arial', sans-serif;
-            padding: 40px;
+            padding: 30px;
             background: white;
             color: #333;
+            font-size: 14px;
+            line-height: 1.6;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 3px solid #667eea;
         }
         
         .header h1 {
-            font-size: 36px;
+            font-size: 32px;
             color: #667eea;
             margin-bottom: 10px;
+            font-weight: 700;
         }
         
         .header p {
-            font-size: 16px;
+            font-size: 14px;
             color: #666;
         }
         
@@ -44,9 +50,10 @@
         }
         
         .user-info h2 {
-            font-size: 24px;
+            font-size: 20px;
             margin-bottom: 10px;
             color: #333;
+            font-weight: 600;
         }
         
         .user-info p {
@@ -55,28 +62,30 @@
         }
         
         .stats-overview {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
-            margin-bottom: 40px;
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+            border-spacing: 10px;
         }
         
         .stat-box {
+            display: table-cell;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px;
             border-radius: 10px;
             text-align: center;
+            width: 20%;
         }
         
         .stat-number {
-            font-size: 32px;
-            font-weight: bold;
+            font-size: 28px;
+            font-weight: 700;
             margin-bottom: 5px;
         }
         
         .stat-label {
-            font-size: 14px;
+            font-size: 12px;
             opacity: 0.9;
         }
         
@@ -98,29 +107,32 @@
         }
         
         .section {
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             page-break-inside: avoid;
         }
         
         .section h2 {
-            font-size: 24px;
+            font-size: 20px;
             color: #667eea;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 2px solid #e0e0e0;
+            font-weight: 600;
         }
         
         .color-stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
+            display: table;
+            width: 100%;
+            border-spacing: 10px;
             margin-bottom: 20px;
         }
         
         .color-item {
+            display: table-cell;
             padding: 15px;
             border-radius: 10px;
             text-align: center;
+            width: 25%;
         }
         
         .color-item.red {
@@ -144,32 +156,35 @@
         }
         
         .color-item h3 {
-            font-size: 24px;
+            font-size: 20px;
             margin-bottom: 5px;
+            font-weight: 600;
         }
         
         .color-item p {
-            font-size: 14px;
+            font-size: 13px;
             color: #666;
+            margin: 3px 0;
         }
         
         .list-section {
             background: #f8f9fa;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
         }
         
         .list-section h3 {
-            font-size: 18px;
-            margin-bottom: 15px;
+            font-size: 16px;
+            margin-bottom: 12px;
             color: #333;
+            font-weight: 600;
         }
         
         .list-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
+            display: table;
+            width: 100%;
+            padding: 8px 0;
             border-bottom: 1px solid #e0e0e0;
         }
         
@@ -178,23 +193,90 @@
         }
         
         .list-item-label {
-            font-size: 14px;
+            display: table-cell;
+            font-size: 13px;
             color: #333;
+            width: 70%;
         }
         
         .list-item-value {
-            font-size: 14px;
-            font-weight: bold;
+            display: table-cell;
+            font-size: 13px;
+            font-weight: 600;
             color: #667eea;
+            text-align: right;
+            width: 30%;
+        }
+        
+        /* ส่วนรายการทั้งหมด */
+        .mood-list {
+            margin-top: 20px;
+        }
+        
+        .mood-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 5px solid;
+            page-break-inside: avoid;
+        }
+        
+        .mood-item.แดง { border-left-color: #ff6b6b; }
+        .mood-item.เหลือง { border-left-color: #ffd93d; }
+        .mood-item.น้ำเงิน { border-left-color: #6bcfff; }
+        .mood-item.เขียว { border-left-color: #51cf66; }
+        
+        .mood-header {
+            display: table;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .mood-datetime {
+            display: table-cell;
+            color: #666;
+            font-size: 12px;
+            width: 60%;
+        }
+        
+        .mood-color-badge {
+            display: table-cell;
+            text-align: right;
+            font-size: 11px;
+            font-weight: 600;
+            color: #667eea;
+            width: 40%;
+        }
+        
+        .mood-emotion {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin: 8px 0;
+        }
+        
+        .mood-trigger {
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .mood-detail {
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            font-size: 13px;
         }
         
         .footer {
-            margin-top: 60px;
+            margin-top: 40px;
             padding-top: 20px;
             border-top: 2px solid #e0e0e0;
             text-align: center;
             color: #999;
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .footer p {
@@ -207,6 +289,10 @@
             color: #999;
         }
         
+        .page-break {
+            page-break-before: always;
+        }
+        
         @media print {
             body {
                 padding: 20px;
@@ -215,20 +301,30 @@
             .section {
                 page-break-inside: avoid;
             }
+            
+            .mood-item {
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Header -->
     <div class="header">
-        <h1>📔 รายงานสถิติความรู้สึก</h1>
+        <h1>รายงานสถิติความรู้สึก</h1>
         <p>Mood Tracker Statistics Report</p>
     </div>
     
     <!-- User Info -->
     <div class="user-info">
         <h2>ผู้ใช้งาน: {{ username }}</h2>
-        <p>📅 วันที่ออกรายงาน: {{ export_date }}</p>
+        <p>วันที่ออกรายงาน: {{ export_date }}</p>
+        <p>จำนวนบันทึกทั้งหมด: {{ total_moods }} รายการ</p>
+        {% if filter_summary %}
+        <p style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+            <strong>ตัวกรองที่ใช้:</strong> {{ filter_summary }}
+        </p>
+        {% endif %}
     </div>
     
     <!-- Stats Overview -->
@@ -262,41 +358,41 @@
     {% if total_moods > 0 %}
     <!-- Color Statistics -->
     <div class="section">
-        <h2>🎨 สัดส่วนตามสีความรู้สึก</h2>
+        <h2>สัดส่วนตามสีความรู้สึก</h2>
         <div class="color-stats">
             <div class="color-item red">
-                <h3>🔴 แดง</h3>
+                <h3>แดง</h3>
                 <p>{{ color_stats.get('แดง', 0) }} ครั้ง</p>
                 <p>{{ "%.1f"|format((color_stats.get('แดง', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
-                <p style="font-size: 12px; margin-top: 5px;">พลังงานสูง + ไม่พอใจ</p>
+                <p style="font-size: 11px; margin-top: 5px;">พลังงานสูง + ไม่พอใจ</p>
             </div>
             
             <div class="color-item yellow">
-                <h3>🟡 เหลือง</h3>
+                <h3>เหลือง</h3>
                 <p>{{ color_stats.get('เหลือง', 0) }} ครั้ง</p>
                 <p>{{ "%.1f"|format((color_stats.get('เหลือง', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
-                <p style="font-size: 12px; margin-top: 5px;">พลังงานสูง + พอใจ</p>
+                <p style="font-size: 11px; margin-top: 5px;">พลังงานสูง + พอใจ</p>
             </div>
             
             <div class="color-item blue">
-                <h3>🔵 น้ำเงิน</h3>
+                <h3>น้ำเงิน</h3>
                 <p>{{ color_stats.get('น้ำเงิน', 0) }} ครั้ง</p>
                 <p>{{ "%.1f"|format((color_stats.get('น้ำเงิน', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
-                <p style="font-size: 12px; margin-top: 5px;">พลังงานต่ำ + ไม่พอใจ</p>
+                <p style="font-size: 11px; margin-top: 5px;">พลังงานต่ำ + ไม่พอใจ</p>
             </div>
             
             <div class="color-item green">
-                <h3>🟢 เขียว</h3>
+                <h3>เขียว</h3>
                 <p>{{ color_stats.get('เขียว', 0) }} ครั้ง</p>
                 <p>{{ "%.1f"|format((color_stats.get('เขียว', 0) / total_moods * 100) if total_moods > 0 else 0) }}%</p>
-                <p style="font-size: 12px; margin-top: 5px;">พลังงานต่ำ + พอใจ</p>
+                <p style="font-size: 11px; margin-top: 5px;">พลังงานต่ำ + พอใจ</p>
             </div>
         </div>
     </div>
     
     <!-- Emotion Statistics -->
     <div class="section">
-        <h2>😊 อารมณ์ที่พบบ่อย (Top 10)</h2>
+        <h2>อารมณ์ที่พบบ่อย (Top 10)</h2>
         <div class="list-section">
             {% if emotion_stats %}
                 {% for emotion, count in emotion_stats.items() %}
@@ -313,7 +409,7 @@
     
     <!-- Trigger Statistics -->
     <div class="section">
-        <h2>💥 สิ่งกระตุ้นที่พบบ่อย (Top 10)</h2>
+        <h2>สิ่งกระตุ้นที่พบบ่อย (Top 10)</h2>
         <div class="list-section">
             {% if trigger_stats %}
                 {% for trigger, count in trigger_stats.items() %}
@@ -328,6 +424,31 @@
         </div>
     </div>
     
+    <!-- รายการทั้งหมด (ถ้าต้องการ Export) -->
+    {% if moods and include_all_entries %}
+    <div class="page-break"></div>
+    <div class="section">
+        <h2>รายการบันทึกทั้งหมด ({{ moods|length }} รายการ)</h2>
+        <div class="mood-list">
+            {% for mood in moods %}
+            <div class="mood-item {{ mood.color }}">
+                <div class="mood-header">
+                    <div class="mood-datetime">
+                        วันที่: {{ mood.date }} เวลา {{ mood.time }}
+                    </div>
+                    <div class="mood-color-badge">
+                        {{ mood.color }}
+                    </div>
+                </div>
+                <div class="mood-emotion">อารมณ์: {{ mood.emotion }}</div>
+                <div class="mood-trigger">สิ่งกระตุ้น: {{ mood.trigger }}</div>
+                <div class="mood-detail">{{ mood.detail }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
     {% else %}
     <div class="section">
         <div class="no-data">
@@ -339,7 +460,7 @@
     
     <!-- Footer -->
     <div class="footer">
-        <p>📔 Mood Tracker - บันทึกความรู้สึกของคุณ</p>
+        <p>Mood Tracker - บันทึกความรู้สึกของคุณ</p>
         <p>© 2024 Mood Tracker. All rights reserved.</p>
         <p>สร้างโดยระบบอัตโนมัติ</p>
     </div>

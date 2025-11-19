@@ -50,11 +50,19 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
     }
     
     .chart-section h3 {
         margin-bottom: 20px;
         color: #333;
+    }
+    
+    .export-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
     }
     
     .btn-export {
@@ -67,12 +75,18 @@
         font-size: 14px;
         font-weight: 600;
         text-decoration: none;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         transition: transform 0.2s;
     }
     
     .btn-export:hover {
         transform: translateY(-2px);
+    }
+    
+    .btn-export.full {
+        background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
     }
     
     .chart-container {
@@ -100,6 +114,206 @@
         display: block;
     }
     
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        animation: fadeIn 0.3s;
+    }
+    
+    .modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background-color: white;
+        padding: 30px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideUp 0.3s;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.5em;
+        color: #333;
+    }
+    
+    .close-btn {
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #999;
+        background: none;
+        border: none;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .close-btn:hover {
+        color: #333;
+    }
+    
+    .filter-group {
+        margin-bottom: 20px;
+    }
+    
+    .filter-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+    
+    .filter-group select:focus,
+    .filter-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .color-filter-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .color-checkbox {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .color-checkbox:hover {
+        border-color: #667eea;
+        background: #f8f9fa;
+    }
+    
+    .color-checkbox input[type="checkbox"] {
+        width: auto;
+        margin-right: 10px;
+    }
+    
+    .color-checkbox.red { border-left: 5px solid #ff6b6b; }
+    .color-checkbox.yellow { border-left: 5px solid #ffd93d; }
+    .color-checkbox.blue { border-left: 5px solid #6bcfff; }
+    .color-checkbox.green { border-left: 5px solid #51cf66; }
+    
+    .date-range {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 25px;
+    }
+    
+    .btn-apply {
+        flex: 1;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .btn-apply:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-reset {
+        padding: 15px 30px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .filter-summary {
+        background: #e7f3ff;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+    }
+    
+    .filter-summary.active {
+        display: block;
+    }
+    
+    .filter-summary p {
+        margin: 5px 0;
+        color: #333;
+        font-size: 14px;
+    }
+    
+    .filter-tag {
+        display: inline-block;
+        padding: 5px 12px;
+        background: #667eea;
+        color: white;
+        border-radius: 20px;
+        font-size: 12px;
+        margin: 3px;
+    }
+    
     @media (max-width: 768px) {
         .chart-container {
             height: 300px;
@@ -109,6 +323,23 @@
             flex-direction: column;
             gap: 15px;
             align-items: flex-start;
+        }
+        
+        .export-buttons {
+            width: 100%;
+        }
+        
+        .btn-export {
+            flex: 1;
+            justify-content: center;
+        }
+        
+        .color-filter-options {
+            grid-template-columns: 1fr;
+        }
+        
+        .date-range {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -153,12 +384,113 @@
 <div class="chart-section">
     <div class="chart-header">
         <h3>🎨 สัดส่วนตามสีความรู้สึก</h3>
-        <a href="{{ url_for('export_pdf') }}" class="btn-export">
-            📥 ดาวน์โหลด PDF
-        </a>
+        <div class="export-buttons">
+            <a href="{{ url_for('export_pdf') }}" class="btn-export">
+                <i class="fas fa-file-pdf"></i>
+                สถิติ PDF
+            </a>
+            <button onclick="openFilterModal()" class="btn-export full">
+                <i class="fas fa-filter"></i>
+                กรอง & Export
+            </button>
+        </div>
     </div>
+    
+    <!-- สรุปตัวกรอง -->
+    <div class="filter-summary" id="filterSummary">
+        <p><strong>🔍 ตัวกรองที่ใช้:</strong></p>
+        <div id="filterTags"></div>
+    </div>
+    
     <div class="chart-container">
         <canvas id="colorChart"></canvas>
+    </div>
+</div>
+
+<!-- Modal ตัวกรอง -->
+<div id="filterModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🔍 ตัวกรอง Export PDF</h2>
+            <button class="close-btn" onclick="closeFilterModal()">&times;</button>
+        </div>
+        
+        <form id="filterForm">
+            <!-- กรองตามสี -->
+            <div class="filter-group">
+                <label>🎨 เลือกสีที่ต้องการ:</label>
+                <div class="color-filter-options">
+                    <label class="color-checkbox red">
+                        <input type="checkbox" name="colors" value="แดง" checked>
+                        <span>แดง (พลังงานสูง + ไม่พอใจ)</span>
+                    </label>
+                    <label class="color-checkbox yellow">
+                        <input type="checkbox" name="colors" value="เหลือง" checked>
+                        <span>เหลือง (พลังงานสูง + พอใจ)</span>
+                    </label>
+                    <label class="color-checkbox blue">
+                        <input type="checkbox" name="colors" value="น้ำเงิน" checked>
+                        <span>น้ำเงิน (พลังงานต่ำ + ไม่พอใจ)</span>
+                    </label>
+                    <label class="color-checkbox green">
+                        <input type="checkbox" name="colors" value="เขียว" checked>
+                        <span>เขียว (พลังงานต่ำ + พอใจ)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- กรองตามช่วงเวลา -->
+            <div class="filter-group">
+                <label>📅 ช่วงเวลา:</label>
+                <div class="date-range">
+                    <div>
+                        <label style="font-size: 14px; font-weight: normal;">จากวันที่:</label>
+                        <input type="date" name="start_date" id="startDate">
+                    </div>
+                    <div>
+                        <label style="font-size: 14px; font-weight: normal;">ถึงวันที่:</label>
+                        <input type="date" name="end_date" id="endDate">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- กรองตามอารมณ์ -->
+            <div class="filter-group">
+                <label>😊 อารมณ์ที่ต้องการ (เว้นว่างถ้าต้องการทั้งหมด):</label>
+                <select name="emotion" id="emotionFilter">
+                    <option value="">-- ทั้งหมด --</option>
+                    {% if emotion_stats %}
+                        {% for emotion in emotion_stats.keys() %}
+                        <option value="{{ emotion }}">{{ emotion }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+            
+            <!-- เรียงลำดับ -->
+            <div class="filter-group">
+                <label>📊 เรียงลำดับ:</label>
+                <select name="sort_order" id="sortOrder">
+                    <option value="desc">ใหม่สุดก่อน</option>
+                    <option value="asc">เก่าสุดก่อน</option>
+                </select>
+            </div>
+            
+            <!-- จำกัดจำนวน -->
+            <div class="filter-group">
+                <label>📝 จำนวนรายการสูงสุด (0 = ไม่จำกัด):</label>
+                <input type="number" name="limit" id="limitInput" value="0" min="0" max="1000">
+            </div>
+            
+            <div class="filter-actions">
+                <button type="button" class="btn-reset" onclick="resetFilter()">
+                    🔄 รีเซ็ต
+                </button>
+                <button type="button" class="btn-apply" onclick="applyFilter()">
+                    📥 Export PDF
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -187,6 +519,131 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+// ============================================================
+// Modal Functions
+// ============================================================
+
+function openFilterModal() {
+    document.getElementById('filterModal').classList.add('active');
+}
+
+function closeFilterModal() {
+    document.getElementById('filterModal').classList.remove('active');
+}
+
+// ปิด modal เมื่อคลิกนอก modal
+window.onclick = function(event) {
+    const modal = document.getElementById('filterModal');
+    if (event.target === modal) {
+        closeFilterModal();
+    }
+}
+
+// ============================================================
+// Filter Functions
+// ============================================================
+
+function resetFilter() {
+    // เลือกสีทั้งหมด
+    document.querySelectorAll('input[name="colors"]').forEach(cb => cb.checked = true);
+    
+    // ล้างวันที่
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+    
+    // รีเซ็ตอารมณ์
+    document.getElementById('emotionFilter').value = '';
+    
+    // รีเซ็ตการเรียงลำดับ
+    document.getElementById('sortOrder').value = 'desc';
+    
+    // รีเซ็ตจำนวน
+    document.getElementById('limitInput').value = '0';
+}
+
+function applyFilter() {
+    // รับค่าจากฟอร์ม
+    const selectedColors = Array.from(document.querySelectorAll('input[name="colors"]:checked'))
+        .map(cb => cb.value);
+    
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const emotion = document.getElementById('emotionFilter').value;
+    const sortOrder = document.getElementById('sortOrder').value;
+    const limit = document.getElementById('limitInput').value;
+    
+    // ตรวจสอบว่าเลือกอย่างน้อย 1 สี
+    if (selectedColors.length === 0) {
+        alert('❌ กรุณาเลือกอย่างน้อย 1 สี');
+        return;
+    }
+    
+    // สร้าง URL พร้อม Query Parameters
+    const params = new URLSearchParams();
+    
+    // เพิ่มสี
+    selectedColors.forEach(color => params.append('colors', color));
+    
+    // เพิ่มวันที่
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    // เพิ่มอารมณ์
+    if (emotion) params.append('emotion', emotion);
+    
+    // เพิ่มการเรียงลำดับ
+    params.append('sort_order', sortOrder);
+    
+    // เพิ่มจำนวน
+    if (limit && limit !== '0') params.append('limit', limit);
+    
+    // แสดงสรุปตัวกรอง
+    showFilterSummary(selectedColors, startDate, endDate, emotion, sortOrder, limit);
+    
+    // Redirect ไป Export
+    window.location.href = `/export-pdf-filtered?${params.toString()}`;
+}
+
+function showFilterSummary(colors, startDate, endDate, emotion, sortOrder, limit) {
+    const summary = document.getElementById('filterSummary');
+    const tags = document.getElementById('filterTags');
+    tags.innerHTML = '';
+    
+    // แสดงสี
+    colors.forEach(color => {
+        tags.innerHTML += `<span class="filter-tag">สี: ${color}</span>`;
+    });
+    
+    // แสดงช่วงเวลา
+    if (startDate || endDate) {
+        const dateText = startDate && endDate ? `${startDate} ถึง ${endDate}` :
+                        startDate ? `ตั้งแต่ ${startDate}` :
+                        `จนถึง ${endDate}`;
+        tags.innerHTML += `<span class="filter-tag">📅 ${dateText}</span>`;
+    }
+    
+    // แสดงอารมณ์
+    if (emotion) {
+        tags.innerHTML += `<span class="filter-tag">😊 ${emotion}</span>`;
+    }
+    
+    // แสดงการเรียง
+    const sortText = sortOrder === 'desc' ? 'ใหม่สุดก่อน' : 'เก่าสุดก่อน';
+    tags.innerHTML += `<span class="filter-tag">📊 ${sortText}</span>`;
+    
+    // แสดงจำนวน
+    if (limit && limit !== '0') {
+        tags.innerHTML += `<span class="filter-tag">📝 ${limit} รายการ</span>`;
+    }
+    
+    summary.classList.add('active');
+    
+    // ปิด modal
+    closeFilterModal();
+}
+</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -196,7 +653,7 @@
     // ข้อมูล Triggers ตามสี
     const colorTriggersData = {{ color_triggers|tojson }};
     
-    // กราฟแท่งแนวตั้ง (เปลี่ยนจาก Doughnut)
+    // กราฟแท่งแนวตั้ง
     const colorData = {
         labels: ['แดง', 'เหลือง', 'น้ำเงิน', 'เขียว'],
         datasets: [{
@@ -272,7 +729,6 @@
                 },
                 tooltip: {
                     callbacks: {
-                        // แสดง Triggers ตอน Hover
                         afterLabel: function(context) {
                             const colorName = context.label;
                             const triggers = colorTriggersData[colorName];
